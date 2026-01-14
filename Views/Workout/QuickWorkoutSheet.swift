@@ -11,7 +11,6 @@ struct QuickWorkoutSheet: View {
     let onComplete: (Workout) -> Void
 
     @State private var selectedTemplate: WorkoutTemplate?
-    @State private var showInputView = false
 
     private var cardioTemplates: [WorkoutTemplate] {
         defaultTemplates.filter { $0.workoutType == .cardio }
@@ -51,17 +50,15 @@ struct QuickWorkoutSheet: View {
                     .foregroundColor(Theme.textSecondary)
                 }
             }
-            .sheet(isPresented: $showInputView) {
-                if let template = selectedTemplate {
-                    WorkoutInputSheet(
-                        template: template,
-                        player: player,
-                        onComplete: { workout in
-                            onComplete(workout)
-                            dismiss()
-                        }
-                    )
-                }
+            .sheet(item: $selectedTemplate) { template in
+                WorkoutInputSheet(
+                    template: template,
+                    player: player,
+                    onComplete: { workout in
+                        onComplete(workout)
+                        dismiss()
+                    }
+                )
             }
         }
     }
@@ -81,7 +78,6 @@ struct QuickWorkoutSheet: View {
                 ForEach(templates) { template in
                     WorkoutTemplateButton(template: template) {
                         selectedTemplate = template
-                        showInputView = true
                     }
                 }
             }

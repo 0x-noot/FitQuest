@@ -192,7 +192,7 @@ struct WorkoutHistoryRow: View {
         WorkoutHistoryView(player: {
             let p = Player()
             p.workouts = [
-                Workout(name: "Running", workoutType: .cardio, xpEarned: 156, durationMinutes: 30, steps: 3500),
+                Workout(name: "Running", workoutType: .cardio, xpEarned: 156, steps: 3500, durationMinutes: 30),
                 Workout(name: "Bench Press", workoutType: .strength, xpEarned: 142, weight: 135, reps: 10, sets: 3),
                 Workout(name: "Squats", workoutType: .strength, xpEarned: 168, weight: 185, reps: 8, sets: 4)
             ]

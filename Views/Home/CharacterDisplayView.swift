@@ -141,9 +141,9 @@ struct CharacterDisplayView: View {
     }
 }
 
-// Helper for dynamic shapes
-struct AnyShape: Shape {
-    private let _path: (CGRect) -> Path
+// Helper for dynamic shapes - Fixed for Swift 6 Sendable conformance
+struct AnyShape: Shape, @unchecked Sendable {
+    private let _path: @Sendable (CGRect) -> Path
 
     init<S: Shape>(_ wrapped: S) {
         _path = { rect in
