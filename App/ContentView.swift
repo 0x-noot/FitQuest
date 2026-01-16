@@ -5,6 +5,11 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var players: [Player]
     @State private var isInitialized = false
+    @State private var selectedTab: Tab = .home
+
+    enum Tab {
+        case home, history, profile
+    }
 
     private var player: Player? {
         players.first
@@ -13,7 +18,26 @@ struct ContentView: View {
     var body: some View {
         Group {
             if let player = player {
-                HomeView(player: player)
+                TabView(selection: $selectedTab) {
+                    HomeTab(player: player)
+                        .tabItem {
+                            Label("Home", systemImage: "house.fill")
+                        }
+                        .tag(Tab.home)
+
+                    HistoryTab(player: player)
+                        .tabItem {
+                            Label("History", systemImage: "calendar")
+                        }
+                        .tag(Tab.history)
+
+                    ProfileTab(player: player)
+                        .tabItem {
+                            Label("Profile", systemImage: "person.fill")
+                        }
+                        .tag(Tab.profile)
+                }
+                .tint(Theme.primary)
             } else {
                 ProgressView()
                     .tint(Theme.primary)
@@ -22,6 +46,7 @@ struct ContentView: View {
         .background(Theme.background)
         .onAppear {
             initializeIfNeeded()
+            configureTabBarAppearance()
         }
     }
 
@@ -48,6 +73,15 @@ struct ContentView: View {
         }
 
         try? modelContext.save()
+    }
+
+    private func configureTabBarAppearance() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = UIColor(Theme.cardBackground)
+
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
     }
 }
 

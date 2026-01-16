@@ -3,24 +3,54 @@ import Foundation
 struct XPCalculator {
 
     /// Base XP values for pre-filled workouts
+    /// Cardio = full session (150-250 XP), Strength = individual exercise (30-50 XP)
     static let baseXPValues: [String: Int] = [
-        // Cardio
-        "Run": 80,
-        "Walk": 40,
-        "Cycling": 70,
-        "Swimming": 90,
+        // Cardio (high XP - represents full workout session)
+        "Run": 200,
+        "Walk": 120,
+        "Cycling": 175,
+        "Swimming": 225,
+        "Stair Climber": 200,
 
-        // Strength
-        "Squats": 60,
-        "Deadlifts": 75,
-        "Bench Press": 70,
-        "Pull-ups": 65,
-        "Push-ups": 50,
-        "Planks": 45
+        // Chest
+        "Barbell Bench Press": 45,
+        "Dumbbell Bench Press": 40,
+        "Incline Bench Press": 40,
+        "Chest Fly": 35,
+
+        // Back
+        "Lat Pulldown": 40,
+        "Seated Row": 40,
+        "Pull-ups": 45,
+
+        // Shoulders
+        "Shoulder Press": 40,
+        "Lateral Raises": 30,
+
+        // Biceps
+        "Barbell Curl": 30,
+        "Dumbbell Curl": 30,
+
+        // Triceps
+        "Triceps Pushdown": 30,
+        "Overhead Triceps Extension": 30,
+
+        // Legs
+        "Squats": 50,
+        "Leg Press": 45,
+        "Leg Extensions": 35,
+        "Leg Curls": 35,
+        "Lunges": 40,
+        "Deadlift": 50,
+
+        // Core
+        "Plank": 30,
+        "Cable Crunch": 30,
+        "Russian Twists": 30
     ]
 
     /// Default base XP for custom workouts
-    static let defaultBaseXP = 50
+    static let defaultBaseXP = 35
 
     /// First workout of the day bonus
     static let dailyBonusXP = 25

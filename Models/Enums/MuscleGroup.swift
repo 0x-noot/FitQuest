@@ -4,7 +4,8 @@ enum MuscleGroup: String, Codable, CaseIterable, Identifiable {
     case chest
     case back
     case shoulders
-    case arms
+    case biceps
+    case triceps
     case core
     case legs
     case fullBody
@@ -23,7 +24,8 @@ enum MuscleGroup: String, Codable, CaseIterable, Identifiable {
         case .chest: return "figure.strengthtraining.traditional"
         case .back: return "figure.rowing"
         case .shoulders: return "figure.arms.open"
-        case .arms: return "figure.boxing"
+        case .biceps: return "figure.boxing"
+        case .triceps: return "figure.strengthtraining.functional"
         case .core: return "figure.core.training"
         case .legs: return "figure.walk"
         case .fullBody: return "figure.mixed.cardio"

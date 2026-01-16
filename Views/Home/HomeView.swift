@@ -1,14 +1,12 @@
 import SwiftUI
 import SwiftData
 
-struct HomeView: View {
+struct HomeTab: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var player: Player
 
     @State private var showQuickWorkout = false
     @State private var showCustomWorkout = false
-    @State private var showHistory = false
-    @State private var showCharacterCustomization = false
     @State private var showLevelUp = false
     @State private var newLevel = 0
 
@@ -30,7 +28,7 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 20)
-                .padding(.bottom, 40)
+                .padding(.bottom, 100)
             }
             .background(Theme.background)
             .navigationTitle("FitQuest")
@@ -43,18 +41,10 @@ struct HomeView: View {
             .sheet(isPresented: $showCustomWorkout) {
                 CustomWorkoutSheet(player: player, onComplete: handleWorkoutComplete)
             }
-            .sheet(isPresented: $showCharacterCustomization) {
-                if let character = player.character {
-                    CharacterCustomizationView(character: character)
-                }
-            }
             .fullScreenCover(isPresented: $showLevelUp) {
                 LevelUpView(level: newLevel) {
                     showLevelUp = false
                 }
-            }
-            .navigationDestination(isPresented: $showHistory) {
-                WorkoutHistoryView(player: player)
             }
         }
     }
@@ -63,13 +53,10 @@ struct HomeView: View {
         VStack(spacing: 12) {
             if let character = player.character {
                 CharacterDisplayView(appearance: character, size: 160)
-                    .onTapGesture {
-                        showCharacterCustomization = true
-                    }
 
-                Text("Tap to customize")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Theme.textMuted)
+                Text(player.name)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Theme.textPrimary)
             }
         }
         .padding(.vertical, 10)
@@ -119,10 +106,6 @@ struct HomeView: View {
 
             SecondaryButton("Add Custom Workout", icon: "plus") {
                 showCustomWorkout = true
-            }
-
-            TertiaryButton("View History", icon: "clock") {
-                showHistory = true
             }
         }
         .padding(.top, 8)
@@ -226,7 +209,7 @@ struct LevelUpView: View {
 }
 
 #Preview {
-    HomeView(player: {
+    HomeTab(player: {
         let p = Player(name: "Test")
         p.totalXP = 2450
         p.currentStreak = 7

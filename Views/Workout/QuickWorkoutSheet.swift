@@ -12,30 +12,41 @@ struct QuickWorkoutSheet: View {
 
     @State private var selectedTemplate: WorkoutTemplate?
 
+    // Cardio templates
     private var cardioTemplates: [WorkoutTemplate] {
         defaultTemplates.filter { $0.workoutType == .cardio }
     }
 
-    private var strengthTemplates: [WorkoutTemplate] {
-        defaultTemplates.filter { $0.workoutType == .strength }
+    // Strength templates by muscle group
+    private func strengthTemplates(for muscleGroup: MuscleGroup) -> [WorkoutTemplate] {
+        defaultTemplates.filter { $0.workoutType == .strength && $0.muscleGroup == muscleGroup }
     }
+
+    // Muscle groups to display (in order)
+    private let muscleGroupOrder: [MuscleGroup] = [.chest, .back, .shoulders, .biceps, .triceps, .legs, .core]
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     // Cardio section
-                    workoutSection(title: "Cardio", templates: cardioTemplates)
+                    workoutSection(title: "Cardio", templates: cardioTemplates, accentColor: Theme.secondary)
 
-                    // Strength section
-                    workoutSection(title: "Strength", templates: strengthTemplates)
+                    // Strength sections by muscle group
+                    ForEach(muscleGroupOrder) { muscleGroup in
+                        let templates = strengthTemplates(for: muscleGroup)
+                        if !templates.isEmpty {
+                            workoutSection(title: muscleGroup.displayName, templates: templates, accentColor: Theme.primary)
+                        }
+                    }
 
                     // Custom workouts section
                     if !customTemplates.isEmpty {
-                        workoutSection(title: "My Workouts", templates: customTemplates)
+                        workoutSection(title: "My Workouts", templates: customTemplates, accentColor: Theme.warning)
                     }
                 }
                 .padding(20)
+                .padding(.bottom, 20)
             }
             .background(Theme.background)
             .navigationTitle("Quick Workout")
@@ -63,7 +74,7 @@ struct QuickWorkoutSheet: View {
         }
     }
 
-    private func workoutSection(title: String, templates: [WorkoutTemplate]) -> some View {
+    private func workoutSection(title: String, templates: [WorkoutTemplate], accentColor: Color) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title.uppercased())
                 .font(.system(size: 13, weight: .semibold))
@@ -76,7 +87,7 @@ struct QuickWorkoutSheet: View {
                 GridItem(.flexible(), spacing: 12)
             ], spacing: 12) {
                 ForEach(templates) { template in
-                    WorkoutTemplateButton(template: template) {
+                    WorkoutTemplateButton(template: template, accentColor: accentColor) {
                         selectedTemplate = template
                     }
                 }
@@ -87,6 +98,7 @@ struct QuickWorkoutSheet: View {
 
 struct WorkoutTemplateButton: View {
     let template: WorkoutTemplate
+    var accentColor: Color = Theme.primary
     let action: () -> Void
 
     var body: some View {
@@ -94,15 +106,18 @@ struct WorkoutTemplateButton: View {
             VStack(spacing: 8) {
                 Image(systemName: template.iconName)
                     .font(.system(size: 24))
-                    .foregroundColor(template.workoutType == .cardio ? Theme.secondary : Theme.primary)
+                    .foregroundColor(accentColor)
 
                 Text(template.name)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(Theme.textPrimary)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .frame(minHeight: 80)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 4)
             .background(Theme.cardBackground)
             .cornerRadius(12)
             .overlay(

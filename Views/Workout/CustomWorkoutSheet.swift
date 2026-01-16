@@ -11,6 +11,7 @@ struct CustomWorkoutSheet: View {
     @State private var workoutName: String = ""
     @State private var workoutType: WorkoutType = .strength
     @State private var muscleGroup: MuscleGroup = .fullBody
+    @State private var usesWeight: Bool = true
     @State private var saveAsTemplate: Bool = true
     @State private var showInputView = false
 
@@ -67,6 +68,22 @@ struct CustomWorkoutSheet: View {
                             .background(Theme.cardBackground)
                             .cornerRadius(12)
                         }
+
+                        // Uses weight toggle
+                        Toggle(isOn: $usesWeight) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Uses Weight")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(Theme.textPrimary)
+                                Text("Turn off for bodyweight exercises")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Theme.textMuted)
+                            }
+                        }
+                        .tint(Theme.primary)
+                        .padding(16)
+                        .background(Theme.cardBackground)
+                        .cornerRadius(12)
                     }
 
                     // Save as template toggle
@@ -114,6 +131,7 @@ struct CustomWorkoutSheet: View {
                     workoutName: workoutName,
                     workoutType: workoutType,
                     muscleGroup: muscleGroup,
+                    usesWeight: usesWeight,
                     saveAsTemplate: saveAsTemplate,
                     player: player,
                     modelContext: modelContext,
@@ -133,6 +151,7 @@ struct CustomWorkoutInputSheet: View {
     let workoutName: String
     let workoutType: WorkoutType
     let muscleGroup: MuscleGroup
+    let usesWeight: Bool
     let saveAsTemplate: Bool
     let player: Player
     let modelContext: ModelContext
@@ -154,7 +173,7 @@ struct CustomWorkoutInputSheet: View {
             workoutType: workoutType,
             streak: player.currentStreak,
             isFirstWorkoutOfDay: player.isFirstWorkoutOfDay,
-            weight: workoutType == .strength ? weight : nil,
+            weight: workoutType == .strength && usesWeight ? weight : nil,
             reps: workoutType == .strength ? reps : nil,
             sets: workoutType == .strength ? sets : nil,
             durationMinutes: workoutType == .cardio ? durationMinutes : nil,
@@ -219,41 +238,43 @@ struct CustomWorkoutInputSheet: View {
 
     private var strengthInputsView: some View {
         VStack(spacing: 20) {
-            // Weight
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Weight")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+            // Weight (only if usesWeight is true)
+            if usesWeight {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Weight")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Theme.textSecondary)
 
-                HStack {
-                    Button { weight = max(0, weight - 5) } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(Theme.primary)
+                    HStack {
+                        Button { weight = max(0, weight - 5) } label: {
+                            Image(systemName: "minus.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(Theme.primary)
+                        }
+
+                        TextField("0", value: $weight, format: .number)
+                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .foregroundColor(Theme.textPrimary)
+                            .multilineTextAlignment(.center)
+                            .keyboardType(.decimalPad)
+                            .frame(width: 100)
+
+                        Text("lbs")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(Theme.textMuted)
+
+                        Button { weight += 5 } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 28))
+                                .foregroundColor(Theme.primary)
+                        }
                     }
-
-                    TextField("0", value: $weight, format: .number)
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
-                        .multilineTextAlignment(.center)
-                        .keyboardType(.decimalPad)
-                        .frame(width: 100)
-
-                    Text("lbs")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Theme.textMuted)
-
-                    Button { weight += 5 } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(Theme.primary)
-                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+                .padding(16)
+                .background(Theme.cardBackground)
+                .cornerRadius(12)
             }
-            .padding(16)
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
 
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
@@ -404,7 +425,7 @@ struct CustomWorkoutInputSheet: View {
                 iconName: workoutType == .cardio ? "figure.run" : "dumbbell.fill",
                 baseXP: XPCalculator.defaultBaseXP
             )
-            template.defaultWeight = workoutType == .strength ? weight : nil
+            template.defaultWeight = workoutType == .strength && usesWeight ? weight : nil
             template.defaultReps = workoutType == .strength ? reps : nil
             template.defaultSets = workoutType == .strength ? sets : nil
             template.defaultDuration = workoutType == .cardio ? durationMinutes : nil
@@ -418,7 +439,7 @@ struct CustomWorkoutInputSheet: View {
                 name: workoutName,
                 workoutType: .strength,
                 xpEarned: estimatedXP,
-                weight: weight,
+                weight: usesWeight ? weight : nil,
                 reps: reps,
                 sets: sets
             )
