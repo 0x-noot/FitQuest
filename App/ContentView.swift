@@ -62,13 +62,23 @@ struct ContentView: View {
             modelContext.insert(newPlayer)
         }
 
-        // Seed workout templates if none exist
+        // Seed workout templates - add any missing defaults
         let templateDescriptor = FetchDescriptor<WorkoutTemplate>()
         let existingTemplates = (try? modelContext.fetch(templateDescriptor)) ?? []
+        let existingNames = Set(existingTemplates.map { $0.name })
 
-        if existingTemplates.isEmpty {
-            for template in WorkoutTemplate.createDefaults() {
+        // Add any missing default templates
+        for template in WorkoutTemplate.createDefaults() {
+            if !existingNames.contains(template.name) {
                 modelContext.insert(template)
+            }
+        }
+
+        // Remove old templates that are no longer in defaults (except custom ones)
+        let defaultNames = Set(WorkoutTemplate.createDefaults().map { $0.name })
+        for template in existingTemplates {
+            if !template.isCustom && !defaultNames.contains(template.name) {
+                modelContext.delete(template)
             }
         }
 
