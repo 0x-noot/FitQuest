@@ -49,6 +49,13 @@ struct HistoryTab: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
+                    // Weekly summary
+                    WeeklySummaryCard(
+                        workoutsThisWeek: player.workoutsThisWeek.count,
+                        xpThisWeek: player.xpThisWeek,
+                        currentStreak: player.currentStreak
+                    )
+
                     // Calendar heatmap
                     CalendarHeatmapView(workouts: player.workouts)
 

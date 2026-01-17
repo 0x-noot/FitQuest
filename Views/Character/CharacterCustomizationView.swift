@@ -5,6 +5,7 @@ struct CharacterCustomizationView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Bindable var character: CharacterAppearance
+    var playerRank: PlayerRank = .bronze
 
     @State private var selectedTab: CustomizationTab = .body
 
@@ -12,12 +13,14 @@ struct CharacterCustomizationView: View {
         case body = "Body"
         case hair = "Hair"
         case outfit = "Outfit"
+        case background = "BG"
 
         var icon: String {
             switch self {
             case .body: return "person.fill"
             case .hair: return "comb.fill"
             case .outfit: return "tshirt.fill"
+            case .background: return "photo.fill"
             }
         }
     }
@@ -75,6 +78,8 @@ struct CharacterCustomizationView: View {
                             hairOptions
                         case .outfit:
                             outfitOptions
+                        case .background:
+                            backgroundOptions
                         }
                     }
                     .padding(20)
@@ -278,6 +283,80 @@ struct CharacterCustomizationView: View {
                         lockText: "Lv.10",
                         action: { }
                     )
+                }
+            }
+        }
+    }
+
+    private var backgroundOptions: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Character Background")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(Theme.textSecondary)
+
+            VStack(spacing: 12) {
+                ForEach(CharacterBackground.allCases) { bg in
+                    let isUnlocked = bg.isUnlocked(for: playerRank)
+                    let isSelected = character.background == bg
+
+                    Button {
+                        if isUnlocked {
+                            character.background = bg
+                        }
+                    } label: {
+                        HStack(spacing: 16) {
+                            // Preview gradient
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(bg.gradient)
+                                .frame(width: 50, height: 50)
+                                .overlay(
+                                    Image(systemName: bg.iconName)
+                                        .font(.system(size: 20))
+                                        .foregroundColor(bg.accentColor)
+                                )
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(bg.displayName)
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(isUnlocked ? Theme.textPrimary : Theme.textMuted)
+
+                                Text(bg.description)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Theme.textMuted)
+
+                                if !isUnlocked, let rank = bg.unlockRank {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "lock.fill")
+                                            .font(.system(size: 10))
+                                        Text("Reach \(rank.displayName) rank")
+                                            .font(.system(size: 11))
+                                    }
+                                    .foregroundColor(rank.color)
+                                }
+                            }
+
+                            Spacer()
+
+                            if isSelected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(Theme.primary)
+                            } else if !isUnlocked {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(Theme.textMuted)
+                            }
+                        }
+                        .padding(12)
+                        .background(isSelected ? Theme.primary.opacity(0.1) : Theme.cardBackground)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(isSelected ? Theme.primary : Theme.elevated, lineWidth: 1.5)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!isUnlocked)
                 }
             }
         }

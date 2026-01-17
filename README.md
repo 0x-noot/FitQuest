@@ -26,13 +26,43 @@ The app features three main tabs:
 ### Gamification System
 - **XP Progression**: Earn experience points for every workout completed
 - **Level System**: Progress through levels using a balanced quadratic curve (`100 × level^1.8`)
+- **Ranking System**: Progress through 5 ranks as you level up:
+
+| Rank | Levels | Color |
+|------|--------|-------|
+| Bronze | 1-10 | Bronze |
+| Silver | 11-25 | Silver |
+| Gold | 26-50 | Gold |
+| Platinum | 51-100 | Platinum |
+| Diamond | 100+ | Cyan |
+
 - **Daily Streaks**: Build consecutive workout days for bonus XP multipliers
   - 3-6 days: +10% bonus
   - 7-13 days: +25% bonus
   - 14-29 days: +50% bonus
   - 30+ days: +100% bonus
+- **Rest Days**: Use up to 2 rest days per week to protect your streak
 - **Level-Up Celebrations**: Animated celebrations when you reach new levels
+- **Rank-Up Celebrations**: Epic celebrations when you reach new ranks
+- **Motivational Quotes**: Random inspirational quotes displayed on the home screen
 - **Milestone Rewards**: Special unlocks at levels 5, 10, 15, 20, 25, 30, 40, 50, 75, and 100
+
+### Achievements (11 Badges)
+Earn badges by completing challenges:
+
+| Badge | Requirement |
+|-------|-------------|
+| First Steps | Complete 1 workout |
+| Week Warrior | Maintain a 7-day streak |
+| Dedicated | Maintain a 14-day streak |
+| Unstoppable | Maintain a 30-day streak |
+| Century | Complete 100 workouts |
+| XP Hunter | Earn 10,000 total XP |
+| Rising Star | Reach level 10 |
+| Champion | Reach level 25 |
+| Legend | Reach level 50 |
+| Early Bird | Workout before 9 AM |
+| Night Owl | Workout after 9 PM |
 
 ### Workout Tracking (27 Pre-filled Workouts)
 
@@ -70,6 +100,7 @@ This balances XP for users who do cardio vs. those who do multiple strength exer
 - **Custom Workouts**: Create and save your own workout templates with "Uses Weight" toggle for bodyweight exercises
 
 ### History Tab
+- **Weekly Summary Card**: Shows workouts, XP, and streak for the current week with progress bar
 - **30-Day Calendar Heatmap**: Visual representation of workout consistency
   - Color intensity based on number of workouts per day
   - Today highlighted with border
@@ -87,7 +118,11 @@ This balances XP for users who do cardio vs. those who do multiple strength exer
   - Current Streak
   - Highest Streak
   - Member Since date
-- **Preferences**: Notification settings, weight unit selection
+- **Achievements Section**: Grid of all 11 achievement badges with tap-to-view details
+- **Preferences**:
+  - Notification toggle (daily 1 PM reminder)
+  - Sound effects toggle
+  - Weight unit selection
 - **About**: Version information
 
 ### Character Customization
@@ -99,7 +134,12 @@ This balances XP for users who do cardio vs. those who do multiple strength exer
   - Outfit colors (tops and bottoms)
   - Headwear (unlockable)
   - Accessories (unlockable)
-- **Unlockable Items**: Earn new customization options by reaching level milestones
+  - **Backgrounds** (unlockable by rank):
+    - Default (always available)
+    - Gym (Silver rank)
+    - Outdoor (Gold rank)
+    - Premium (Platinum rank)
+- **Unlockable Items**: Earn new customization options by reaching level milestones and ranks
 
 ### User Interface
 - **Dark Mode Design**: Sleek, modern UI with purple and cyan accents
@@ -121,24 +161,30 @@ FitQuest/
 │   ├── FitQuestApp.swift              # App entry point
 │   └── ContentView.swift              # TabView navigation
 ├── Models/
-│   ├── Player.swift                   # Player profile, XP, streaks
+│   ├── Player.swift                   # Player profile, XP, streaks, rest days
 │   ├── Workout.swift                  # Workout records
 │   ├── WorkoutTemplate.swift          # 27 workout templates
-│   ├── CharacterAppearance.swift      # Character customization
+│   ├── CharacterAppearance.swift      # Character customization + background
+│   ├── Achievement.swift              # Achievement definitions
 │   └── Enums/
 │       ├── WorkoutType.swift          # Cardio vs Strength
-│       └── MuscleGroup.swift          # 8 muscle categories
+│       ├── MuscleGroup.swift          # 8 muscle categories
+│       ├── PlayerRank.swift           # Bronze to Diamond ranks
+│       └── CharacterBackground.swift  # Unlockable backgrounds
 ├── ViewModels/
 │   ├── PlayerViewModel.swift          # Player state management
 │   └── WorkoutViewModel.swift         # Workout operations
 ├── Views/
 │   ├── Home/
 │   │   ├── HomeTab.swift              # Home tab dashboard
-│   │   └── CharacterDisplayView.swift # Character rendering
+│   │   ├── CharacterDisplayView.swift # Character rendering
+│   │   └── RankUpView.swift           # Rank-up celebration
 │   ├── History/
-│   │   └── HistoryTab.swift           # Calendar heatmap & history
+│   │   ├── HistoryTab.swift           # Calendar heatmap & history
+│   │   └── WeeklySummaryCard.swift    # Weekly stats card
 │   ├── Profile/
-│   │   └── ProfileTab.swift           # Avatar, name, settings
+│   │   ├── ProfileTab.swift           # Avatar, name, settings
+│   │   └── AchievementBadgeView.swift # Achievement badges UI
 │   ├── Workout/
 │   │   ├── QuickWorkoutSheet.swift    # Muscle group organized selection
 │   │   ├── CustomWorkoutSheet.swift   # Custom workout creation
@@ -149,11 +195,16 @@ FitQuest/
 │       ├── XPProgressBar.swift        # Animated progress bar
 │       ├── StreakBadge.swift          # Streak display
 │       ├── LevelBadge.swift           # Level indicator
+│       ├── RankBadge.swift            # Rank display
+│       ├── RestDayButton.swift        # Rest day protection
 │       └── PrimaryButton.swift        # Styled buttons
 ├── Services/
 │   ├── LevelManager.swift             # XP thresholds & levels
 │   ├── XPCalculator.swift             # XP award calculations
-│   └── StreakManager.swift            # Streak logic
+│   ├── StreakManager.swift            # Streak logic
+│   ├── QuoteManager.swift             # Motivational quotes
+│   ├── SoundManager.swift             # Sound effects
+│   └── NotificationManager.swift      # Push notifications
 └── Extensions/
     └── Color+Theme.swift              # Dark mode color palette
 ```
@@ -194,7 +245,19 @@ FitQuest/
 
 ## Version History
 
-### v1.1.0 (Current)
+### v1.2.0 (Current)
+- **Ranking System**: Bronze, Silver, Gold, Platinum, Diamond tiers based on level
+- **Rank-up Celebrations**: Animated celebration when reaching new ranks
+- **Daily Motivational Quotes**: Random inspirational quotes on the home screen
+- **Achievement System**: 11 unlockable badges displayed on Profile tab
+- **Unlockable Backgrounds**: 4 character backgrounds unlocked by rank progression
+- **Rest Days**: Up to 2 rest days per week to protect your streak
+- **Weekly Summary**: Stats card showing workouts, XP, and streak this week
+- **Smart Notifications**: Daily 1 PM reminder that skips if you've already worked out
+- **Sound Effects**: Optional sounds for XP gain, level-up, rank-up, and more
+- **Sound Toggle**: Enable/disable sound effects in preferences
+
+### v1.1.0
 - **Tab-based navigation**: Home, History, Profile tabs
 - **Expanded workouts**: 27 pre-filled templates (was 10)
 - **Muscle group organization**: Chest, Back, Shoulders, Biceps, Triceps, Legs, Core
@@ -216,23 +279,18 @@ FitQuest/
 
 ## Roadmap
 
-### v1.2.0 (Planned)
+### v1.3.0 (Planned)
 - [ ] Real pixel art character sprites
 - [ ] Character idle animations
-- [ ] Achievement system
-- [ ] Workout reminders/notifications
-
-### v1.3.0 (Planned)
 - [ ] iCloud sync
 - [ ] Apple Health integration
-- [ ] Workout statistics and charts
-- [ ] Social features (share achievements)
 
 ### v2.0.0 (Future)
 - [ ] Workout programs/plans
 - [ ] Exercise library with instructions
 - [ ] Rest timer
 - [ ] Apple Watch companion app
+- [ ] Social features (share achievements)
 
 ## Color Palette
 

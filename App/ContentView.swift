@@ -48,6 +48,12 @@ struct ContentView: View {
             initializeIfNeeded()
             configureTabBarAppearance()
         }
+        .onChange(of: player?.hasWorkedOutToday) { _, hasWorkedOut in
+            // Cancel today's notification if user has worked out
+            if let worked = hasWorkedOut, worked {
+                NotificationManager.shared.cancelTodayReminderIfWorkedOut(hasWorkedOutToday: true)
+            }
+        }
     }
 
     private func initializeIfNeeded() {

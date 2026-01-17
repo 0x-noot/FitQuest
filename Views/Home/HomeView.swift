@@ -9,6 +9,9 @@ struct HomeTab: View {
     @State private var showCustomWorkout = false
     @State private var showLevelUp = false
     @State private var newLevel = 0
+    @State private var showRankUp = false
+    @State private var newRank: PlayerRank = .bronze
+    @State private var currentQuote: String = QuoteManager.randomQuote()
 
     var body: some View {
         NavigationStack {
@@ -44,13 +47,35 @@ struct HomeTab: View {
             .fullScreenCover(isPresented: $showLevelUp) {
                 LevelUpView(level: newLevel) {
                     showLevelUp = false
+                    // Check if rank also changed after level-up dismiss
+                    if showRankUp {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showRankUp = true
+                        }
+                    }
                 }
+            }
+            .fullScreenCover(isPresented: $showRankUp) {
+                RankUpView(rank: newRank) {
+                    showRankUp = false
+                }
+            }
+            .onAppear {
+                currentQuote = QuoteManager.randomQuote()
             }
         }
     }
 
     private var characterSection: some View {
         VStack(spacing: 12) {
+            // Motivational quote
+            Text("\"\(currentQuote)\"")
+                .font(.system(size: 14, weight: .medium).italic())
+                .foregroundColor(Theme.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+
             if let character = player.character {
                 CharacterDisplayView(appearance: character, size: 160)
 
@@ -59,14 +84,22 @@ struct HomeTab: View {
                     .foregroundColor(Theme.textPrimary)
             }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(player.character?.background.gradient ?? CharacterBackground.defaultDark.gradient)
+        )
     }
 
     private var statsSection: some View {
         VStack(spacing: 16) {
-            // Level
+            // Level and Rank
             HStack {
-                LevelBadge(level: player.currentLevel, size: .large)
+                HStack(spacing: 8) {
+                    LevelBadge(level: player.currentLevel, size: .large)
+                    RankBadge(rank: player.currentRank, size: .medium)
+                }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("\(player.xpToNextLevel.formatted()) XP")
@@ -91,11 +124,18 @@ struct HomeTab: View {
     }
 
     private var streakSection: some View {
-        StreakBadge(
-            currentStreak: player.currentStreak,
-            highestStreak: player.highestStreak
-        )
-        .frame(maxWidth: .infinity)
+        VStack(spacing: 12) {
+            StreakBadge(
+                currentStreak: player.currentStreak,
+                highestStreak: player.highestStreak
+            )
+            .frame(maxWidth: .infinity)
+
+            // Rest day button (only show if user has a streak)
+            if player.currentStreak > 0 {
+                RestDayButton(player: player)
+            }
+        }
     }
 
     private var actionButtons: some View {
@@ -113,6 +153,7 @@ struct HomeTab: View {
 
     private func handleWorkoutComplete(_ workout: Workout) {
         let previousLevel = player.currentLevel
+        let previousRank = player.currentRank
 
         // Update streak
         player.updateStreak()
@@ -125,10 +166,33 @@ struct HomeTab: View {
         // Add XP
         player.addXP(workout.xpEarned)
 
+        // Play sound effects if enabled
+        if player.soundEffectsEnabled {
+            SoundManager.shared.playXPGain()
+            SoundManager.shared.playSuccessHaptic()
+        }
+
         // Check for level up
-        if player.currentLevel > previousLevel {
+        let didLevelUp = player.currentLevel > previousLevel
+        if didLevelUp {
             newLevel = player.currentLevel
+            if player.soundEffectsEnabled {
+                SoundManager.shared.playLevelUp()
+            }
             showLevelUp = true
+        }
+
+        // Check for rank up (after level up so we can sequence the celebrations)
+        let didRankUp = player.currentRank != previousRank
+        if didRankUp {
+            newRank = player.currentRank
+            if player.soundEffectsEnabled {
+                SoundManager.shared.playRankUp()
+            }
+            // If also leveled up, rank-up will show after level-up dismisses
+            if !didLevelUp {
+                showRankUp = true
+            }
         }
 
         try? modelContext.save()

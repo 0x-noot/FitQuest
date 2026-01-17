@@ -22,6 +22,9 @@ struct ProfileTab: View {
                     // Stats overview
                     statsSection
 
+                    // Achievements
+                    AchievementsSection(player: player)
+
                     // Preferences
                     preferencesSection
 
@@ -38,7 +41,7 @@ struct ProfileTab: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .sheet(isPresented: $showCharacterCustomization) {
                 if let character = player.character {
-                    CharacterCustomizationView(character: character)
+                    CharacterCustomizationView(character: character, playerRank: player.currentRank)
                 }
             }
         }
@@ -164,10 +167,30 @@ struct ProfileTab: View {
                 PreferenceRow(
                     icon: "bell.fill",
                     title: "Notifications",
-                    subtitle: "Reminder to workout",
+                    subtitle: "Daily reminder at 1 PM",
                     color: Theme.warning
                 ) {
-                    Toggle("", isOn: .constant(false))
+                    Toggle("", isOn: Binding(
+                        get: { player.notificationsEnabled },
+                        set: { newValue in
+                            Task {
+                                await handleNotificationToggle(newValue)
+                            }
+                        }
+                    ))
+                    .tint(Theme.primary)
+                    .labelsHidden()
+                }
+
+                Divider().background(Theme.elevated)
+
+                PreferenceRow(
+                    icon: "speaker.wave.2.fill",
+                    title: "Sound Effects",
+                    subtitle: "Play sounds on actions",
+                    color: Theme.secondary
+                ) {
+                    Toggle("", isOn: $player.soundEffectsEnabled)
                         .tint(Theme.primary)
                         .labelsHidden()
                 }
@@ -190,6 +213,21 @@ struct ProfileTab: View {
         }
     }
 
+    private func handleNotificationToggle(_ enabled: Bool) async {
+        if enabled {
+            let granted = await NotificationManager.shared.requestAuthorization()
+            if granted {
+                player.notificationsEnabled = true
+                NotificationManager.shared.scheduleDailyReminder()
+                try? modelContext.save()
+            }
+        } else {
+            player.notificationsEnabled = false
+            NotificationManager.shared.cancelDailyReminder()
+            try? modelContext.save()
+        }
+    }
+
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("ABOUT")
@@ -198,9 +236,9 @@ struct ProfileTab: View {
                 .tracking(1)
 
             VStack(spacing: 0) {
-                AboutRow(title: "Version", value: "1.0.0")
+                AboutRow(title: "Version", value: "1.2.0")
                 Divider().background(Theme.elevated)
-                AboutRow(title: "Build", value: "27 workouts")
+                AboutRow(title: "Build", value: "27 workouts, 11 achievements")
             }
             .background(Theme.cardBackground)
             .cornerRadius(12)

@@ -23,7 +23,15 @@ final class CharacterAppearance {
     // Unlocked items
     var unlockedItems: String
 
+    // Background
+    var backgroundRaw: String
+
     var player: Player?
+
+    var background: CharacterBackground {
+        get { CharacterBackground(rawValue: backgroundRaw) ?? .defaultDark }
+        set { backgroundRaw = newValue.rawValue }
+    }
 
     init() {
         self.id = UUID()
@@ -38,6 +46,7 @@ final class CharacterAppearance {
         self.footwear = 0
         self.accessory = nil
         self.unlockedItems = ""
+        self.backgroundRaw = CharacterBackground.defaultDark.rawValue
     }
 
     func hasUnlocked(_ category: String, index: Int) -> Bool {

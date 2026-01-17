@@ -1,8 +1,11 @@
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct FitQuestApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Player.self,
@@ -25,5 +28,16 @@ struct FitQuestApp: App {
                 .preferredColorScheme(.dark)
         }
         .modelContainer(sharedModelContainer)
+    }
+}
+
+class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        // Set up notification delegate
+        UNUserNotificationCenter.current().delegate = NotificationManager.shared
+        return true
     }
 }
