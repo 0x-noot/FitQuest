@@ -19,6 +19,22 @@ final class Player {
     var restDaysUsedThisWeek: Int
     var lastRestDayReset: Date
 
+    // Onboarding
+    var hasCompletedOnboarding: Bool
+    var fitnessGoalsRaw: String
+    var fitnessLevelRaw: String
+    var workoutStyleRaw: String
+    var equipmentAccessRaw: String
+    var focusAreasRaw: String
+
+    // Weekly streak system
+    var weeklyWorkoutGoal: Int
+    var currentWeeklyStreak: Int
+    var highestWeeklyStreak: Int
+    var lastWeekCompleted: Date?
+    var workoutsCompletedThisWeek: Int
+    var lastWeeklyStreakReset: Date
+
     @Relationship(deleteRule: .cascade, inverse: \Workout.player)
     var workouts: [Workout] = []
 
@@ -70,6 +86,61 @@ final class Player {
         workoutsThisWeek.reduce(0) { $0 + $1.xpEarned }
     }
 
+    // Onboarding computed properties
+    var fitnessGoals: [FitnessGoal] {
+        get {
+            guard !fitnessGoalsRaw.isEmpty else { return [] }
+            return fitnessGoalsRaw.split(separator: ",").compactMap { FitnessGoal(rawValue: String($0)) }
+        }
+        set {
+            fitnessGoalsRaw = newValue.map { $0.rawValue }.joined(separator: ",")
+        }
+    }
+
+    var fitnessLevel: FitnessLevel? {
+        get { FitnessLevel(rawValue: fitnessLevelRaw) }
+        set { fitnessLevelRaw = newValue?.rawValue ?? "" }
+    }
+
+    var workoutStyle: WorkoutStyle? {
+        get { WorkoutStyle(rawValue: workoutStyleRaw) }
+        set { workoutStyleRaw = newValue?.rawValue ?? "" }
+    }
+
+    var equipmentAccess: [EquipmentAccess] {
+        get {
+            guard !equipmentAccessRaw.isEmpty else { return [] }
+            return equipmentAccessRaw.split(separator: ",").compactMap { EquipmentAccess(rawValue: String($0)) }
+        }
+        set {
+            equipmentAccessRaw = newValue.map { $0.rawValue }.joined(separator: ",")
+        }
+    }
+
+    var focusAreas: [FocusArea] {
+        get {
+            guard !focusAreasRaw.isEmpty else { return [] }
+            return focusAreasRaw.split(separator: ",").compactMap { FocusArea(rawValue: String($0)) }
+        }
+        set {
+            focusAreasRaw = newValue.map { $0.rawValue }.joined(separator: ",")
+        }
+    }
+
+    var hasBuildMuscleGoal: Bool {
+        fitnessGoals.contains(.buildMuscle)
+    }
+
+    // Weekly streak progress
+    var weeklyGoalProgress: Double {
+        guard weeklyWorkoutGoal > 0 else { return 0 }
+        return min(1.0, Double(workoutsCompletedThisWeek) / Double(weeklyWorkoutGoal))
+    }
+
+    var hasMetWeeklyGoal: Bool {
+        workoutsCompletedThisWeek >= weeklyWorkoutGoal
+    }
+
     // Rest days
     var remainingRestDays: Int {
         resetRestDaysIfNeeded()
@@ -91,6 +162,22 @@ final class Player {
         self.soundEffectsEnabled = true
         self.restDaysUsedThisWeek = 0
         self.lastRestDayReset = Date()
+
+        // Onboarding defaults
+        self.hasCompletedOnboarding = false
+        self.fitnessGoalsRaw = ""
+        self.fitnessLevelRaw = ""
+        self.workoutStyleRaw = ""
+        self.equipmentAccessRaw = ""
+        self.focusAreasRaw = ""
+
+        // Weekly streak defaults
+        self.weeklyWorkoutGoal = 3
+        self.currentWeeklyStreak = 0
+        self.highestWeeklyStreak = 0
+        self.lastWeekCompleted = nil
+        self.workoutsCompletedThisWeek = 0
+        self.lastWeeklyStreakReset = Date()
     }
 
     /// Add XP and return if leveled up
@@ -150,6 +237,58 @@ final class Player {
         if currentWeekStart > lastResetWeekStart {
             restDaysUsedThisWeek = 0
             lastRestDayReset = Date()
+        }
+    }
+
+    /// Reset weekly workout counter at the start of each week
+    func resetWeeklyWorkoutsIfNeeded() {
+        let calendar = Calendar.current
+        let currentWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) ?? Date()
+        let lastResetWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: lastWeeklyStreakReset)) ?? Date()
+
+        if currentWeekStart > lastResetWeekStart {
+            workoutsCompletedThisWeek = 0
+            lastWeeklyStreakReset = Date()
+        }
+    }
+
+    /// Update weekly streak after completing a workout
+    func updateWeeklyStreak() {
+        resetWeeklyWorkoutsIfNeeded()
+
+        // Only count first workout of the day
+        guard isFirstWorkoutOfDay else { return }
+
+        workoutsCompletedThisWeek += 1
+
+        // Check if we met the weekly goal
+        if workoutsCompletedThisWeek >= weeklyWorkoutGoal {
+            let calendar = Calendar.current
+            let currentWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) ?? Date()
+
+            // Only update streak once per week
+            if lastWeekCompleted == nil || !calendar.isDate(lastWeekCompleted!, equalTo: currentWeekStart, toGranularity: .weekOfYear) {
+                // Check if last completed week was the previous week
+                if let lastCompleted = lastWeekCompleted {
+                    let previousWeekStart = calendar.date(byAdding: .weekOfYear, value: -1, to: currentWeekStart)!
+                    if calendar.isDate(lastCompleted, equalTo: previousWeekStart, toGranularity: .weekOfYear) {
+                        // Consecutive week - increment streak
+                        currentWeeklyStreak += 1
+                    } else {
+                        // Streak broken - reset to 1
+                        currentWeeklyStreak = 1
+                    }
+                } else {
+                    // First time meeting goal
+                    currentWeeklyStreak = 1
+                }
+
+                lastWeekCompleted = currentWeekStart
+
+                if currentWeeklyStreak > highestWeeklyStreak {
+                    highestWeeklyStreak = currentWeeklyStreak
+                }
+            }
         }
     }
 

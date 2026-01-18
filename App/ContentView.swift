@@ -20,26 +20,32 @@ struct ContentView: View {
     var body: some View {
         Group {
             if let player = player {
-                TabView(selection: $selectedTab) {
-                    HomeTab(player: player)
-                        .tabItem {
-                            Label("Home", systemImage: "house.fill")
-                        }
-                        .tag(Tab.home)
+                if !player.hasCompletedOnboarding {
+                    // Show onboarding for new users
+                    OnboardingView(player: player)
+                } else {
+                    // Show main app
+                    TabView(selection: $selectedTab) {
+                        HomeTab(player: player)
+                            .tabItem {
+                                Label("Home", systemImage: "house.fill")
+                            }
+                            .tag(Tab.home)
 
-                    HistoryTab(player: player)
-                        .tabItem {
-                            Label("History", systemImage: "calendar")
-                        }
-                        .tag(Tab.history)
+                        HistoryTab(player: player)
+                            .tabItem {
+                                Label("History", systemImage: "calendar")
+                            }
+                            .tag(Tab.history)
 
-                    ProfileTab(player: player)
-                        .tabItem {
-                            Label("Profile", systemImage: "person.fill")
-                        }
-                        .tag(Tab.profile)
+                        ProfileTab(player: player)
+                            .tabItem {
+                                Label("Profile", systemImage: "person.fill")
+                            }
+                            .tag(Tab.profile)
+                    }
+                    .tint(Theme.primary)
                 }
-                .tint(Theme.primary)
             } else {
                 // Loading state with visible indicator
                 VStack(spacing: 20) {
@@ -83,12 +89,14 @@ struct ContentView: View {
 
         // Create player if none exists
         if players.isEmpty {
-            let newPlayer = Player(name: "Player")
+            let newPlayer = Player(name: "")
             let character = CharacterAppearance()
             newPlayer.character = character
+            // New players start with onboarding not completed
+            newPlayer.hasCompletedOnboarding = false
             modelContext.insert(newPlayer)
             modelContext.insert(character)
-            
+
             do {
                 try modelContext.save()
                 // Force a refresh after saving
@@ -97,6 +105,17 @@ struct ContentView: View {
                 }
             } catch {
                 print("Error saving player: \(error)")
+            }
+        } else if let existingPlayer = players.first {
+            // Existing users who have workouts or XP should skip onboarding
+            if !existingPlayer.hasCompletedOnboarding &&
+               (existingPlayer.totalXP > 0 || !existingPlayer.workouts.isEmpty) {
+                existingPlayer.hasCompletedOnboarding = true
+                // Set a reasonable default weekly goal for existing users
+                if existingPlayer.weeklyWorkoutGoal == 0 {
+                    existingPlayer.weeklyWorkoutGoal = 3
+                }
+                try? modelContext.save()
             }
         }
 

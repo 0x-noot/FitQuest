@@ -17,6 +17,14 @@ struct WorkoutInputSheet: View {
     @State private var steps: String = ""
     @State private var calories: String = ""
 
+    // Walking-specific inputs
+    @State private var incline: Double = 0
+    @State private var speed: Double = 3.0
+
+    private var isWalkingWorkout: Bool {
+        template.name == "Walk"
+    }
+
     private var estimatedXP: Int {
         let stepsValue = Int(steps)
         let caloriesValue = Int(calories)
@@ -31,8 +39,14 @@ struct WorkoutInputSheet: View {
             sets: template.workoutType == .strength ? sets : nil,
             durationMinutes: template.workoutType == .cardio ? durationMinutes : nil,
             steps: stepsValue,
-            calories: caloriesValue
+            calories: caloriesValue,
+            incline: isWalkingWorkout ? incline : nil,
+            speed: isWalkingWorkout ? speed : nil
         )
+    }
+
+    private var walkingIntensityBonus: (incline: Int, speed: Int) {
+        XPCalculator.calculateWalkingIntensityBonus(incline: incline, speed: speed)
     }
 
     private var streakBonusText: String? {
@@ -223,6 +237,11 @@ struct WorkoutInputSheet: View {
             .background(Theme.cardBackground)
             .cornerRadius(12)
 
+            // Walking-specific inputs
+            if isWalkingWorkout {
+                walkingIntensityInputs
+            }
+
             HStack(spacing: 16) {
                 // Steps (optional)
                 VStack(alignment: .leading, spacing: 8) {
@@ -267,6 +286,84 @@ struct WorkoutInputSheet: View {
         }
     }
 
+    private var walkingIntensityInputs: some View {
+        VStack(spacing: 16) {
+            // Incline
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Incline")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Theme.textSecondary)
+
+                    Spacer()
+
+                    Text("\(String(format: "%.1f", incline))%")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(Theme.textPrimary)
+
+                    if walkingIntensityBonus.incline > 0 {
+                        Text("+\(walkingIntensityBonus.incline)%")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Theme.success)
+                    }
+                }
+
+                Slider(value: $incline, in: 0...15, step: 0.5)
+                    .tint(Theme.secondary)
+
+                HStack {
+                    Text("Flat")
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.textMuted)
+                    Spacer()
+                    Text("15%")
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.textMuted)
+                }
+            }
+            .padding(16)
+            .background(Theme.cardBackground)
+            .cornerRadius(12)
+
+            // Speed
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Speed")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Theme.textSecondary)
+
+                    Spacer()
+
+                    Text("\(String(format: "%.1f", speed)) mph")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundColor(Theme.textPrimary)
+
+                    if walkingIntensityBonus.speed > 0 {
+                        Text("+\(walkingIntensityBonus.speed)%")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Theme.success)
+                    }
+                }
+
+                Slider(value: $speed, in: 1.0...5.0, step: 0.1)
+                    .tint(Theme.secondary)
+
+                HStack {
+                    Text("Slow (1.0)")
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.textMuted)
+                    Spacer()
+                    Text("Fast (5.0)")
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.textMuted)
+                }
+            }
+            .padding(16)
+            .background(Theme.cardBackground)
+            .cornerRadius(12)
+        }
+    }
+
     private var xpPreview: some View {
         VStack(spacing: 8) {
             HStack {
@@ -284,6 +381,30 @@ struct WorkoutInputSheet: View {
                     Image(systemName: "bolt.fill")
                         .font(.system(size: 16))
                         .foregroundColor(Theme.warning)
+                }
+            }
+
+            // Walking intensity bonuses
+            if isWalkingWorkout && (walkingIntensityBonus.incline > 0 || walkingIntensityBonus.speed > 0) {
+                HStack {
+                    Image(systemName: "arrow.up.right")
+                        .font(.system(size: 12))
+                        .foregroundColor(Theme.secondary)
+
+                    if walkingIntensityBonus.incline > 0 && walkingIntensityBonus.speed > 0 {
+                        Text("+\(walkingIntensityBonus.incline)% incline, +\(walkingIntensityBonus.speed)% speed bonus")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Theme.secondary)
+                    } else if walkingIntensityBonus.incline > 0 {
+                        Text("+\(walkingIntensityBonus.incline)% incline bonus")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Theme.secondary)
+                    } else {
+                        Text("+\(walkingIntensityBonus.speed)% speed bonus")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Theme.secondary)
+                    }
+                    Spacer()
                 }
             }
 
@@ -335,7 +456,9 @@ struct WorkoutInputSheet: View {
                 xpEarned: estimatedXP,
                 steps: Int(steps),
                 durationMinutes: durationMinutes,
-                caloriesBurned: Int(calories)
+                caloriesBurned: Int(calories),
+                incline: isWalkingWorkout ? incline : nil,
+                speed: isWalkingWorkout ? speed : nil
             )
         }
 

@@ -63,4 +63,51 @@ struct StreakManager {
             return "\(streak) days"
         }
     }
+
+    // MARK: - Weekly Streak Helpers
+
+    /// Get the start of the current week
+    static func startOfCurrentWeek() -> Date {
+        let calendar = Calendar.current
+        return calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) ?? Date()
+    }
+
+    /// Check if two dates are in the same week
+    static func isSameWeek(_ date1: Date, _ date2: Date) -> Bool {
+        Calendar.current.isDate(date1, equalTo: date2, toGranularity: .weekOfYear)
+    }
+
+    /// Check if a date is in the previous week relative to another date
+    static func isPreviousWeek(_ date: Date, relativeTo referenceDate: Date) -> Bool {
+        let calendar = Calendar.current
+        guard let previousWeekDate = calendar.date(byAdding: .weekOfYear, value: -1, to: referenceDate) else {
+            return false
+        }
+        return isSameWeek(date, previousWeekDate)
+    }
+
+    /// Format weekly streak for display
+    static func formatWeeklyStreak(_ streak: Int) -> String {
+        if streak == 1 {
+            return "1 week"
+        } else {
+            return "\(streak) weeks"
+        }
+    }
+
+    /// Get encouraging text based on weekly progress
+    static func weeklyProgressText(completed: Int, goal: Int) -> String {
+        if completed == 0 {
+            return "Start your week strong!"
+        } else if completed < goal {
+            let remaining = goal - completed
+            if remaining == 1 {
+                return "Just 1 more workout to hit your goal!"
+            } else {
+                return "\(remaining) more workouts to hit your goal"
+            }
+        } else {
+            return "Weekly goal achieved!"
+        }
+    }
 }

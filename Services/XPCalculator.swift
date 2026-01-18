@@ -77,12 +77,42 @@ struct XPCalculator {
         baseXP: Int,
         durationMinutes: Int,
         steps: Int? = nil,
-        calories: Int? = nil
+        calories: Int? = nil,
+        incline: Double? = nil,
+        speed: Double? = nil
     ) -> Int {
         let durationMultiplier = 1.0 + (Double(durationMinutes) / 60.0)
         let intensityBonus = calories.map { Double($0) / 200.0 } ?? 0
-        let total = Double(baseXP) * durationMultiplier + intensityBonus
+
+        // Walking intensity bonus based on incline and speed
+        var walkingIntensityMultiplier = 1.0
+        if let inclineValue = incline, inclineValue > 0 {
+            // Each 1% incline adds 5% XP bonus (max 75% at 15% incline)
+            walkingIntensityMultiplier += min(inclineValue * 0.05, 0.75)
+        }
+        if let speedValue = speed {
+            // Speed bonus: 2.0 mph = baseline, each 0.5 mph above adds 10% (max 60% at 5.0 mph)
+            let speedBonus = max(0, (speedValue - 2.0) / 0.5 * 0.10)
+            walkingIntensityMultiplier += min(speedBonus, 0.60)
+        }
+
+        let total = Double(baseXP) * durationMultiplier * walkingIntensityMultiplier + intensityBonus
         return Int(min(total, Double(baseXP) * 5))
+    }
+
+    /// Calculate walking XP with detailed intensity breakdown
+    static func calculateWalkingIntensityBonus(incline: Double?, speed: Double?) -> (inclineBonus: Int, speedBonus: Int) {
+        var inclineBonus = 0
+        var speedBonus = 0
+
+        if let inclineValue = incline, inclineValue > 0 {
+            inclineBonus = Int(min(inclineValue * 5, 75))
+        }
+        if let speedValue = speed, speedValue > 2.0 {
+            speedBonus = Int(min((speedValue - 2.0) / 0.5 * 10, 60))
+        }
+
+        return (inclineBonus, speedBonus)
     }
 
     /// Streak bonus multiplier
@@ -115,7 +145,9 @@ struct XPCalculator {
         sets: Int? = nil,
         durationMinutes: Int? = nil,
         steps: Int? = nil,
-        calories: Int? = nil
+        calories: Int? = nil,
+        incline: Double? = nil,
+        speed: Double? = nil
     ) -> Int {
         var xp: Int
 
@@ -132,7 +164,9 @@ struct XPCalculator {
                 baseXP: baseXP,
                 durationMinutes: durationMinutes ?? 0,
                 steps: steps,
-                calories: calories
+                calories: calories,
+                incline: incline,
+                speed: speed
             )
         }
 

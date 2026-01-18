@@ -16,22 +16,19 @@ struct HomeTab: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 16) {
                     // Character Section
                     characterSection
 
-                    // Stats Section
-                    statsSection
-
-                    // Streak Section
-                    streakSection
+                    // Combined Stats & Streak Section
+                    combinedStatsSection
 
                     // Action Buttons
                     actionButtons
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 100)
+                .padding(.top, 16)
+                .padding(.bottom, 20)
             }
             .background(Theme.background)
             .navigationTitle("FitQuest")
@@ -62,29 +59,30 @@ struct HomeTab: View {
             }
             .onAppear {
                 currentQuote = QuoteManager.randomQuote()
+                player.resetWeeklyWorkoutsIfNeeded()
             }
         }
     }
 
     private var characterSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             // Motivational quote
             Text("\"\(currentQuote)\"")
-                .font(.system(size: 14, weight: .medium).italic())
+                .font(.system(size: 13, weight: .medium).italic())
                 .foregroundColor(Theme.textSecondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
 
             if let character = player.character {
-                CharacterDisplayView(appearance: character, size: 160)
+                CharacterDisplayView(appearance: character, size: 130)
 
                 Text(player.name)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(Theme.textPrimary)
             }
         }
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 16)
@@ -92,21 +90,21 @@ struct HomeTab: View {
         )
     }
 
-    private var statsSection: some View {
-        VStack(spacing: 16) {
-            // Level and Rank
+    private var combinedStatsSection: some View {
+        VStack(spacing: 12) {
+            // Level and Rank row
             HStack {
-                HStack(spacing: 8) {
-                    LevelBadge(level: player.currentLevel, size: .large)
-                    RankBadge(rank: player.currentRank, size: .medium)
+                HStack(spacing: 6) {
+                    LevelBadge(level: player.currentLevel, size: .medium)
+                    RankBadge(rank: player.currentRank, size: .small)
                 }
                 Spacer()
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 1) {
                     Text("\(player.xpToNextLevel.formatted()) XP")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundColor(Theme.textSecondary)
                     Text("to next level")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundColor(Theme.textMuted)
                 }
             }
@@ -117,25 +115,24 @@ struct HomeTab: View {
                 currentXP: player.totalXP - LevelManager.xpRangeFor(level: player.currentLevel).start,
                 targetXP: LevelManager.xpRangeFor(level: player.currentLevel).end - LevelManager.xpRangeFor(level: player.currentLevel).start
             )
+
+            Divider()
+                .background(Theme.elevated)
+
+            // Weekly streak section
+            WeeklyStreakBadge(
+                workoutsCompleted: player.workoutsCompletedThisWeek,
+                weeklyGoal: player.weeklyWorkoutGoal,
+                currentStreak: player.currentWeeklyStreak,
+                highestStreak: player.highestWeeklyStreak,
+                compact: true
+            )
+            .padding(-12)
+            .padding(.horizontal, -4)
         }
-        .padding(20)
+        .padding(16)
         .background(Theme.cardBackground)
         .cornerRadius(16)
-    }
-
-    private var streakSection: some View {
-        VStack(spacing: 12) {
-            StreakBadge(
-                currentStreak: player.currentStreak,
-                highestStreak: player.highestStreak
-            )
-            .frame(maxWidth: .infinity)
-
-            // Rest day button (only show if user has a streak)
-            if player.currentStreak > 0 {
-                RestDayButton(player: player)
-            }
-        }
     }
 
     private var actionButtons: some View {
@@ -155,8 +152,9 @@ struct HomeTab: View {
         let previousLevel = player.currentLevel
         let previousRank = player.currentRank
 
-        // Update streak
+        // Update streaks (daily and weekly)
         player.updateStreak()
+        player.updateWeeklyStreak()
 
         // Add workout
         workout.player = player
@@ -278,6 +276,10 @@ struct LevelUpView: View {
         p.totalXP = 2450
         p.currentStreak = 7
         p.highestStreak = 14
+        p.weeklyWorkoutGoal = 4
+        p.workoutsCompletedThisWeek = 2
+        p.currentWeeklyStreak = 3
+        p.highestWeeklyStreak = 8
         p.character = CharacterAppearance()
         return p
     }())

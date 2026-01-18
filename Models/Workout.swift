@@ -19,6 +19,10 @@ final class Workout {
     var durationMinutes: Int?
     var caloriesBurned: Int?
 
+    // Walking-specific fields
+    var incline: Double?      // Treadmill incline percentage (0-15)
+    var speed: Double?        // Walking speed in mph (1.0-5.0)
+
     // Relationships
     var player: Player?
     var template: WorkoutTemplate?
@@ -37,7 +41,9 @@ final class Workout {
         sets: Int? = nil,
         steps: Int? = nil,
         durationMinutes: Int? = nil,
-        caloriesBurned: Int? = nil
+        caloriesBurned: Int? = nil,
+        incline: Double? = nil,
+        speed: Double? = nil
     ) {
         self.id = UUID()
         self.name = name
@@ -50,6 +56,8 @@ final class Workout {
         self.steps = steps
         self.durationMinutes = durationMinutes
         self.caloriesBurned = caloriesBurned
+        self.incline = incline
+        self.speed = speed
     }
 
     /// Formatted display of workout details
@@ -65,6 +73,15 @@ final class Workout {
             var parts: [String] = []
             if let duration = durationMinutes {
                 parts.append("\(duration) min")
+            }
+            // Show incline/speed for walking workouts
+            if name == "Walk" {
+                if let inclineValue = incline, inclineValue > 0 {
+                    parts.append("\(String(format: "%.1f", inclineValue))% incline")
+                }
+                if let speedValue = speed {
+                    parts.append("\(String(format: "%.1f", speedValue)) mph")
+                }
             }
             if let steps = steps {
                 parts.append("\(steps.formatted()) steps")
