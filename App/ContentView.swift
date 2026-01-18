@@ -1,11 +1,13 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var players: [Player]
     @State private var isInitialized = false
     @State private var selectedTab: Tab = .home
+    @State private var forceRefresh = false
 
     enum Tab {
         case home, history, profile
@@ -39,14 +41,33 @@ struct ContentView: View {
                 }
                 .tint(Theme.primary)
             } else {
-                ProgressView()
-                    .tint(Theme.primary)
+                // Loading state with visible indicator
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                        .tint(Theme.primary)
+                    
+                    Text("Loading...")
+                        .foregroundColor(Theme.textSecondary)
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Theme.background)
+                .onAppear {
+                    initializePlayer()
+                }
             }
         }
         .background(Theme.background)
+        .id(forceRefresh)
         .onAppear {
-            initializeIfNeeded()
             configureTabBarAppearance()
+            // Small delay to ensure SwiftData is ready
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if players.isEmpty && !isInitialized {
+                    initializePlayer()
+                }
+            }
         }
         .onChange(of: player?.hasWorkedOutToday) { _, hasWorkedOut in
             // Cancel today's notification if user has worked out
@@ -56,7 +77,7 @@ struct ContentView: View {
         }
     }
 
-    private func initializeIfNeeded() {
+    private func initializePlayer() {
         guard !isInitialized else { return }
         isInitialized = true
 
@@ -66,9 +87,24 @@ struct ContentView: View {
             let character = CharacterAppearance()
             newPlayer.character = character
             modelContext.insert(newPlayer)
+            modelContext.insert(character)
+            
+            do {
+                try modelContext.save()
+                // Force a refresh after saving
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    forceRefresh.toggle()
+                }
+            } catch {
+                print("Error saving player: \(error)")
+            }
         }
 
-        // Seed workout templates - add any missing defaults
+        // Seed workout templates
+        seedTemplatesIfNeeded()
+    }
+
+    private func seedTemplatesIfNeeded() {
         let templateDescriptor = FetchDescriptor<WorkoutTemplate>()
         let existingTemplates = (try? modelContext.fetch(templateDescriptor)) ?? []
         let existingNames = Set(existingTemplates.map { $0.name })

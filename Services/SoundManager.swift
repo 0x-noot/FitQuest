@@ -1,5 +1,6 @@
 import AVFoundation
 import AudioToolbox
+import UIKit
 
 class SoundManager {
     static let shared = SoundManager()
