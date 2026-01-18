@@ -17,19 +17,9 @@ struct FitQuestApp: App {
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-            return container
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            // If there's a corruption issue, try to recover by using in-memory storage
-            print("Failed to create ModelContainer: \(error)")
-            print("Attempting to create in-memory container...")
-            
-            let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-            do {
-                return try ModelContainer(for: schema, configurations: [inMemoryConfig])
-            } catch {
-                fatalError("Could not create ModelContainer: \(error)")
-            }
+            fatalError("Could not create ModelContainer: \(error)")
         }
     }()
 
