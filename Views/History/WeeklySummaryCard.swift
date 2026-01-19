@@ -1,13 +1,14 @@
 import SwiftUI
 
 struct WeeklySummaryCard: View {
-    let workoutsThisWeek: Int
+    let daysWorkedOutThisWeek: Int
+    let weeklyGoal: Int
     let xpThisWeek: Int
     let currentStreak: Int
 
     private var weekProgress: Double {
-        // Progress based on a goal of 5 workouts per week
-        min(Double(workoutsThisWeek) / 5.0, 1.0)
+        guard weeklyGoal > 0 else { return 0 }
+        return min(Double(daysWorkedOutThisWeek) / Double(weeklyGoal), 1.0)
     }
 
     var body: some View {
@@ -32,11 +33,11 @@ struct WeeklySummaryCard: View {
 
             // Stats row
             HStack(spacing: 0) {
-                // Workouts
+                // Days
                 WeeklyStat(
-                    value: "\(workoutsThisWeek)",
-                    label: "Workouts",
-                    icon: "figure.run",
+                    value: "\(daysWorkedOutThisWeek)",
+                    label: "Days",
+                    icon: "calendar",
                     color: Theme.primary
                 )
 
@@ -74,7 +75,7 @@ struct WeeklySummaryCard: View {
 
                     Spacer()
 
-                    Text("\(workoutsThisWeek)/5 workouts")
+                    Text("\(daysWorkedOutThisWeek)/\(weeklyGoal) days")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(weekProgress >= 1.0 ? Theme.success : Theme.textMuted)
                 }
@@ -100,7 +101,7 @@ struct WeeklySummaryCard: View {
             }
 
             // Motivational message
-            if workoutsThisWeek >= 5 {
+            if daysWorkedOutThisWeek >= weeklyGoal {
                 HStack(spacing: 6) {
                     Image(systemName: "star.fill")
                         .font(.system(size: 12))
@@ -109,8 +110,9 @@ struct WeeklySummaryCard: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(Theme.warning)
                 }
-            } else if workoutsThisWeek > 0 {
-                Text("\(5 - workoutsThisWeek) more workout\(5 - workoutsThisWeek == 1 ? "" : "s") to hit your goal!")
+            } else if daysWorkedOutThisWeek > 0 {
+                let remaining = weeklyGoal - daysWorkedOutThisWeek
+                Text("\(remaining) more day\(remaining == 1 ? "" : "s") to hit your goal!")
                     .font(.system(size: 12))
                     .foregroundColor(Theme.textMuted)
             }
@@ -163,9 +165,9 @@ struct WeeklyStat: View {
 
 #Preview {
     VStack(spacing: 20) {
-        WeeklySummaryCard(workoutsThisWeek: 3, xpThisWeek: 850, currentStreak: 5)
-        WeeklySummaryCard(workoutsThisWeek: 5, xpThisWeek: 1250, currentStreak: 12)
-        WeeklySummaryCard(workoutsThisWeek: 0, xpThisWeek: 0, currentStreak: 0)
+        WeeklySummaryCard(daysWorkedOutThisWeek: 3, weeklyGoal: 5, xpThisWeek: 850, currentStreak: 5)
+        WeeklySummaryCard(daysWorkedOutThisWeek: 5, weeklyGoal: 5, xpThisWeek: 1250, currentStreak: 12)
+        WeeklySummaryCard(daysWorkedOutThisWeek: 0, weeklyGoal: 3, xpThisWeek: 0, currentStreak: 0)
     }
     .padding()
     .background(Color(red: 0.05, green: 0.05, blue: 0.06))

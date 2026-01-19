@@ -102,9 +102,9 @@ struct StreakManager {
         } else if completed < goal {
             let remaining = goal - completed
             if remaining == 1 {
-                return "Just 1 more workout to hit your goal!"
+                return "Just 1 more day to hit your goal!"
             } else {
-                return "\(remaining) more workouts to hit your goal"
+                return "\(remaining) more days to hit your goal"
             }
         } else {
             return "Weekly goal achieved!"

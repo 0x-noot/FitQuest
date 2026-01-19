@@ -51,7 +51,8 @@ struct HistoryTab: View {
                 VStack(spacing: 24) {
                     // Weekly summary
                     WeeklySummaryCard(
-                        workoutsThisWeek: player.workoutsThisWeek.count,
+                        daysWorkedOutThisWeek: player.daysWorkedOutThisWeek,
+                        weeklyGoal: player.weeklyWorkoutGoal,
                         xpThisWeek: player.xpThisWeek,
                         currentStreak: player.currentStreak
                     )

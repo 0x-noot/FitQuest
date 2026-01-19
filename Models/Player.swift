@@ -32,7 +32,7 @@ final class Player {
     var currentWeeklyStreak: Int
     var highestWeeklyStreak: Int
     var lastWeekCompleted: Date?
-    var workoutsCompletedThisWeek: Int
+    var daysWorkedOutThisWeek: Int
     var lastWeeklyStreakReset: Date
 
     @Relationship(deleteRule: .cascade, inverse: \Workout.player)
@@ -134,11 +134,11 @@ final class Player {
     // Weekly streak progress
     var weeklyGoalProgress: Double {
         guard weeklyWorkoutGoal > 0 else { return 0 }
-        return min(1.0, Double(workoutsCompletedThisWeek) / Double(weeklyWorkoutGoal))
+        return min(1.0, Double(daysWorkedOutThisWeek) / Double(weeklyWorkoutGoal))
     }
 
     var hasMetWeeklyGoal: Bool {
-        workoutsCompletedThisWeek >= weeklyWorkoutGoal
+        daysWorkedOutThisWeek >= weeklyWorkoutGoal
     }
 
     // Rest days
@@ -176,7 +176,7 @@ final class Player {
         self.currentWeeklyStreak = 0
         self.highestWeeklyStreak = 0
         self.lastWeekCompleted = nil
-        self.workoutsCompletedThisWeek = 0
+        self.daysWorkedOutThisWeek = 0
         self.lastWeeklyStreakReset = Date()
     }
 
@@ -247,22 +247,23 @@ final class Player {
         let lastResetWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: lastWeeklyStreakReset)) ?? Date()
 
         if currentWeekStart > lastResetWeekStart {
-            workoutsCompletedThisWeek = 0
+            daysWorkedOutThisWeek = 0
             lastWeeklyStreakReset = Date()
         }
     }
 
     /// Update weekly streak after completing a workout
-    func updateWeeklyStreak() {
+    func updateWeeklyStreak(isFirstWorkout: Bool? = nil) {
         resetWeeklyWorkoutsIfNeeded()
 
         // Only count first workout of the day
-        guard isFirstWorkoutOfDay else { return }
+        let shouldCount = isFirstWorkout ?? isFirstWorkoutOfDay
+        guard shouldCount else { return }
 
-        workoutsCompletedThisWeek += 1
+        daysWorkedOutThisWeek += 1
 
         // Check if we met the weekly goal
-        if workoutsCompletedThisWeek >= weeklyWorkoutGoal {
+        if daysWorkedOutThisWeek >= weeklyWorkoutGoal {
             let calendar = Calendar.current
             let currentWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) ?? Date()
 

@@ -1,14 +1,14 @@
 import SwiftUI
 
 struct WeeklyStreakBadge: View {
-    let workoutsCompleted: Int
+    let daysWorkedOut: Int
     let weeklyGoal: Int
     let currentStreak: Int
     let highestStreak: Int
     var compact: Bool = false
 
     private var hasMetGoal: Bool {
-        workoutsCompleted >= weeklyGoal
+        daysWorkedOut >= weeklyGoal
     }
 
     var body: some View {
@@ -17,25 +17,25 @@ struct WeeklyStreakBadge: View {
             HStack(spacing: 6) {
                 ForEach(0..<weeklyGoal, id: \.self) { index in
                     Circle()
-                        .fill(AnyShapeStyle(index < workoutsCompleted ? Theme.primaryGradient : LinearGradient(colors: [Theme.elevated.opacity(0.5)], startPoint: .leading, endPoint: .trailing)))
+                        .fill(AnyShapeStyle(index < daysWorkedOut ? Theme.primaryGradient : LinearGradient(colors: [Theme.elevated.opacity(0.5)], startPoint: .leading, endPoint: .trailing)))
                         .frame(width: compact ? 10 : 14, height: compact ? 10 : 14)
                         .overlay(
                             Circle()
-                                .stroke(index < workoutsCompleted ? Color.clear : Theme.textMuted.opacity(0.3), lineWidth: 1)
+                                .stroke(index < daysWorkedOut ? Color.clear : Theme.textMuted.opacity(0.3), lineWidth: 1)
                         )
                 }
 
                 Spacer()
 
                 // Progress text
-                Text("\(workoutsCompleted)/\(weeklyGoal)")
+                Text("\(daysWorkedOut)/\(weeklyGoal)")
                     .font(.system(size: compact ? 12 : 14, weight: .semibold, design: .rounded))
                     .foregroundColor(hasMetGoal ? Theme.success : Theme.textSecondary)
             }
 
             // Progress message
             if !compact {
-                Text(StreakManager.weeklyProgressText(completed: workoutsCompleted, goal: weeklyGoal))
+                Text(StreakManager.weeklyProgressText(completed: daysWorkedOut, goal: weeklyGoal))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(hasMetGoal ? Theme.success : Theme.textMuted)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -94,21 +94,21 @@ struct WeeklyStreakBadge: View {
 #Preview {
     VStack(spacing: 20) {
         WeeklyStreakBadge(
-            workoutsCompleted: 2,
+            daysWorkedOut: 2,
             weeklyGoal: 4,
             currentStreak: 3,
             highestStreak: 8
         )
 
         WeeklyStreakBadge(
-            workoutsCompleted: 4,
+            daysWorkedOut: 4,
             weeklyGoal: 4,
             currentStreak: 5,
             highestStreak: 8
         )
 
         WeeklyStreakBadge(
-            workoutsCompleted: 2,
+            daysWorkedOut: 2,
             weeklyGoal: 4,
             currentStreak: 3,
             highestStreak: 8,

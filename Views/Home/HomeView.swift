@@ -121,7 +121,7 @@ struct HomeTab: View {
 
             // Weekly streak section
             WeeklyStreakBadge(
-                workoutsCompleted: player.workoutsCompletedThisWeek,
+                daysWorkedOut: player.daysWorkedOutThisWeek,
                 weeklyGoal: player.weeklyWorkoutGoal,
                 currentStreak: player.currentWeeklyStreak,
                 highestStreak: player.highestWeeklyStreak,
@@ -152,9 +152,12 @@ struct HomeTab: View {
         let previousLevel = player.currentLevel
         let previousRank = player.currentRank
 
+        // Capture state before updating lastWorkoutDate
+        let isFirstWorkoutOfDay = player.isFirstWorkoutOfDay
+
         // Update streaks (daily and weekly)
         player.updateStreak()
-        player.updateWeeklyStreak()
+        player.updateWeeklyStreak(isFirstWorkout: isFirstWorkoutOfDay)
 
         // Add workout
         workout.player = player
@@ -277,7 +280,7 @@ struct LevelUpView: View {
         p.currentStreak = 7
         p.highestStreak = 14
         p.weeklyWorkoutGoal = 4
-        p.workoutsCompletedThisWeek = 2
+        p.daysWorkedOutThisWeek = 2
         p.currentWeeklyStreak = 3
         p.highestWeeklyStreak = 8
         p.character = CharacterAppearance()
