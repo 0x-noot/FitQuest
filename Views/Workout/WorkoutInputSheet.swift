@@ -45,7 +45,7 @@ struct WorkoutInputSheet: View {
         )
     }
 
-    private var walkingIntensityBonus: (incline: Int, speed: Int) {
+    private var walkingIntensityBonus: (inclineBonus: Int, speedBonus: Int) {
         XPCalculator.calculateWalkingIntensityBonus(incline: incline, speed: speed)
     }
 
@@ -301,8 +301,8 @@ struct WorkoutInputSheet: View {
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundColor(Theme.textPrimary)
 
-                    if walkingIntensityBonus.incline > 0 {
-                        Text("+\(walkingIntensityBonus.incline)%")
+                    if walkingIntensityBonus.inclineBonus > 0 {
+                        Text("+\(walkingIntensityBonus.inclineBonus)%")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(Theme.success)
                     }
@@ -338,8 +338,8 @@ struct WorkoutInputSheet: View {
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundColor(Theme.textPrimary)
 
-                    if walkingIntensityBonus.speed > 0 {
-                        Text("+\(walkingIntensityBonus.speed)%")
+                    if walkingIntensityBonus.speedBonus > 0 {
+                        Text("+\(walkingIntensityBonus.speedBonus)%")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(Theme.success)
                     }
@@ -385,22 +385,22 @@ struct WorkoutInputSheet: View {
             }
 
             // Walking intensity bonuses
-            if isWalkingWorkout && (walkingIntensityBonus.incline > 0 || walkingIntensityBonus.speed > 0) {
+            if isWalkingWorkout && (walkingIntensityBonus.inclineBonus > 0 || walkingIntensityBonus.speedBonus > 0) {
                 HStack {
                     Image(systemName: "arrow.up.right")
                         .font(.system(size: 12))
                         .foregroundColor(Theme.secondary)
 
-                    if walkingIntensityBonus.incline > 0 && walkingIntensityBonus.speed > 0 {
-                        Text("+\(walkingIntensityBonus.incline)% incline, +\(walkingIntensityBonus.speed)% speed bonus")
+                    if walkingIntensityBonus.inclineBonus > 0 && walkingIntensityBonus.speedBonus > 0 {
+                        Text("+\(walkingIntensityBonus.inclineBonus)% incline, +\(walkingIntensityBonus.speedBonus)% speed bonus")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(Theme.secondary)
-                    } else if walkingIntensityBonus.incline > 0 {
-                        Text("+\(walkingIntensityBonus.incline)% incline bonus")
+                    } else if walkingIntensityBonus.inclineBonus > 0 {
+                        Text("+\(walkingIntensityBonus.inclineBonus)% incline bonus")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(Theme.secondary)
                     } else {
-                        Text("+\(walkingIntensityBonus.speed)% speed bonus")
+                        Text("+\(walkingIntensityBonus.speedBonus)% speed bonus")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(Theme.secondary)
                     }

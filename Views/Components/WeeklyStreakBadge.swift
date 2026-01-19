@@ -17,7 +17,7 @@ struct WeeklyStreakBadge: View {
             HStack(spacing: 6) {
                 ForEach(0..<weeklyGoal, id: \.self) { index in
                     Circle()
-                        .fill(index < workoutsCompleted ? Theme.primaryGradient : Theme.elevated.opacity(0.5))
+                        .fill(AnyShapeStyle(index < workoutsCompleted ? Theme.primaryGradient : LinearGradient(colors: [Theme.elevated.opacity(0.5)], startPoint: .leading, endPoint: .trailing)))
                         .frame(width: compact ? 10 : 14, height: compact ? 10 : 14)
                         .overlay(
                             Circle()

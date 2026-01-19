@@ -22,8 +22,8 @@ struct OnboardingCompleteStep: View {
                             .font(.system(size: 14))
                             .foregroundColor([Theme.primary, Theme.secondary, Theme.warning, Theme.success][index % 4])
                             .offset(
-                                x: CGFloat.random(in: -100...100),
-                                y: CGFloat.random(in: -150...-50)
+                                x: CGFloat.random(in: (-100)...100),
+                                y: CGFloat.random(in: (-150)...(-50))
                             )
                             .opacity(animateIn ? 0 : 1)
                             .animation(
