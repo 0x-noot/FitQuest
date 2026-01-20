@@ -14,11 +14,13 @@ struct OnboardingView: View {
     @State private var weeklyGoal: Int = 3
     @State private var selectedEquipment: Set<EquipmentAccess> = []
     @State private var selectedFocusAreas: Set<FocusArea> = []
+    @State private var selectedPetSpecies: PetSpecies?
+    @State private var petName: String = ""
 
     private var totalSteps: Int {
-        // Base steps: Welcome, Goals, Level, Style, Weekly Goal, Equipment, Character, Complete = 8
-        // Focus step only shows if "Build muscle" is selected
-        selectedGoals.contains(.buildMuscle) ? 9 : 8
+        // Base steps: Welcome, Goals, Level, Style, Weekly Goal, Equipment, Character, Pet, Complete = 9
+        // Focus step only shows if "Build muscle" is selected = 10
+        selectedGoals.contains(.buildMuscle) ? 10 : 9
     }
 
     private var showFocusStep: Bool {
@@ -119,6 +121,20 @@ struct OnboardingView: View {
                     onContinue: { goToNextStep() }
                 )
             } else {
+                OnboardingPetStep(
+                    selectedSpecies: $selectedPetSpecies,
+                    petName: $petName,
+                    onContinue: { goToNextStep() }
+                )
+            }
+        case 8:
+            if showFocusStep {
+                OnboardingPetStep(
+                    selectedSpecies: $selectedPetSpecies,
+                    petName: $petName,
+                    onContinue: { goToNextStep() }
+                )
+            } else {
                 OnboardingCompleteStep(
                     playerName: name,
                     character: character,
@@ -126,7 +142,7 @@ struct OnboardingView: View {
                     onComplete: { completeOnboarding() }
                 )
             }
-        case 8:
+        case 9:
             OnboardingCompleteStep(
                 playerName: name,
                 character: character,
@@ -171,6 +187,14 @@ struct OnboardingView: View {
         } else {
             player.character = character
             modelContext.insert(character)
+        }
+
+        // Create pet if selected
+        if let species = selectedPetSpecies {
+            let trimmedName = petName.trimmingCharacters(in: .whitespaces)
+            let pet = Pet(name: trimmedName.isEmpty ? species.displayName : trimmedName, species: species)
+            player.pet = pet
+            modelContext.insert(pet)
         }
 
         // Mark onboarding as complete

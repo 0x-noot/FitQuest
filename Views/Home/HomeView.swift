@@ -3,6 +3,7 @@ import SwiftData
 
 struct HomeTab: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Bindable var player: Player
 
     @State private var showQuickWorkout = false
@@ -12,6 +13,9 @@ struct HomeTab: View {
     @State private var showRankUp = false
     @State private var newRank: PlayerRank = .bronze
     @State private var currentQuote: String = QuoteManager.randomQuote()
+    @State private var showPetDetail = false
+    @State private var showTreatSheet = false
+    @State private var showLevelUpConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -19,6 +23,17 @@ struct HomeTab: View {
                 VStack(spacing: 16) {
                     // Character Section
                     characterSection
+
+                    // Pet Display Card
+                    if let pet = player.pet {
+                        PetDisplayCard(
+                            pet: pet,
+                            player: player,
+                            onTap: { showPetDetail = true },
+                            onFeedTreat: { showTreatSheet = true },
+                            onLevelUp: { showLevelUpConfirm = true }
+                        )
+                    }
 
                     // Combined Stats & Streak Section
                     combinedStatsSection
@@ -57,9 +72,61 @@ struct HomeTab: View {
                     showRankUp = false
                 }
             }
+            .sheet(isPresented: $showPetDetail) {
+                if let pet = player.pet {
+                    PetDetailView(pet: pet, player: player)
+                }
+            }
+            .sheet(isPresented: $showTreatSheet) {
+                if let pet = player.pet {
+                    TreatSelectionSheet(pet: pet, player: player)
+                }
+            }
+            .alert("Level Up Pet?", isPresented: $showLevelUpConfirm) {
+                Button("Cancel", role: .cancel) { }
+                Button("Level Up") {
+                    if let pet = player.pet {
+                        let success = PetManager.levelUpPet(pet: pet, player: player)
+                        if success {
+                            try? modelContext.save()
+                        }
+                    }
+                }
+            } message: {
+                if let pet = player.pet {
+                    Text("Level up \(pet.name) to Level \(pet.level + 1) for \(PetManager.levelUpCost(currentLevel: pet.level)) Essence?")
+                }
+            }
             .onAppear {
                 currentQuote = QuoteManager.randomQuote()
                 player.resetWeeklyWorkoutsIfNeeded()
+
+                // Apply passive pet happiness decay
+                if let pet = player.pet {
+                    PetManager.applyPassiveDecay(pet: pet)
+
+                    // Schedule pet notifications based on current happiness
+                    if player.notificationsEnabled {
+                        NotificationManager.shared.schedulePetNotifications(for: pet)
+                    }
+
+                    try? modelContext.save()
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    // Apply passive decay when app becomes active
+                    if let pet = player.pet {
+                        PetManager.applyPassiveDecay(pet: pet)
+
+                        // Re-schedule pet notifications
+                        if player.notificationsEnabled {
+                            NotificationManager.shared.schedulePetNotifications(for: pet)
+                        }
+
+                        try? modelContext.save()
+                    }
+                }
             }
         }
     }
@@ -75,7 +142,7 @@ struct HomeTab: View {
                 .padding(.vertical, 6)
 
             if let character = player.character {
-                CharacterDisplayView(appearance: character, size: 130)
+                CharacterDisplayView(appearance: character, pet: player.pet, size: 130)
 
                 Text(player.name)
                     .font(.system(size: 16, weight: .semibold))
@@ -159,6 +226,11 @@ struct HomeTab: View {
         player.updateStreak()
         player.updateWeeklyStreak(isFirstWorkout: isFirstWorkoutOfDay)
 
+        // Update pet happiness (if pet exists and not away)
+        if let pet = player.pet {
+            PetManager.onWorkoutComplete(pet: pet)
+        }
+
         // Add workout
         workout.player = player
         player.workouts.append(workout)
@@ -166,6 +238,15 @@ struct HomeTab: View {
 
         // Add XP
         player.addXP(workout.xpEarned)
+
+        // Award essence (1 essence per 10 XP, always earned even if pet is away)
+        let essenceEarned = PetManager.essenceEarnedForWorkout(xp: workout.xpEarned)
+        player.essenceCurrency += essenceEarned
+
+        // Cancel pet notifications (happiness restored by workout)
+        if player.notificationsEnabled {
+            NotificationManager.shared.cancelTodayPetNotifications()
+        }
 
         // Play sound effects if enabled
         if player.soundEffectsEnabled {

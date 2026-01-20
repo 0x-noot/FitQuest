@@ -10,6 +10,9 @@ class NotificationManager: NSObject, ObservableObject {
 
     private let notificationCenter = UNUserNotificationCenter.current()
     private let workoutReminderIdentifier = "fitquest.workout.reminder"
+    private let petHungryIdentifier = "fitquest.pet.hungry"
+    private let petSadIdentifier = "fitquest.pet.sad"
+    private let petLeavingIdentifier = "fitquest.pet.leaving"
 
     override init() {
         super.init()
@@ -94,6 +97,113 @@ class NotificationManager: NSObject, ObservableObject {
 
         // Clear badge
         UNUserNotificationCenter.current().setBadgeCount(0)
+    }
+
+    // MARK: - Pet Notifications
+
+    /// Schedule pet notifications based on happiness level
+    func schedulePetNotifications(for pet: Pet) {
+        // Cancel existing pet notifications first
+        cancelPetNotifications()
+
+        guard !pet.isAway else { return }
+
+        let petName = pet.name
+
+        // Schedule notifications based on happiness level
+        if pet.happiness < 30 {
+            // Critical: 8 PM urgent notification
+            schedulePetNotification(
+                identifier: petSadIdentifier,
+                title: "\(petName) needs you!",
+                body: "Happiness critical! Your \(pet.species.displayName) might leave soon. Feed a treat or work out!",
+                hour: 20,  // 8 PM
+                minute: 0
+            )
+        } else if pet.happiness < 50 {
+            // Warning: 6 PM notification
+            schedulePetNotification(
+                identifier: petHungryIdentifier,
+                title: "\(petName) is getting sad",
+                body: "Your \(pet.species.displayName) needs attention. Feed them a treat or work out to boost happiness!",
+                hour: 18,  // 6 PM
+                minute: 0
+            )
+        }
+    }
+
+    /// Schedule immediate notification when pet runs away
+    func schedulePetLeavingNotification() {
+        let content = UNMutableNotificationContent()
+        content.title = "Your pet ran away!"
+        content.body = "Your pet's happiness hit 0%. Complete 3 workouts in 7 days or pay 150 Essence to bring them back."
+        content.sound = .default
+        content.badge = 1
+
+        // Immediate trigger (5 seconds delay to ensure it shows)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+
+        let request = UNNotificationRequest(
+            identifier: petLeavingIdentifier,
+            content: content,
+            trigger: trigger
+        )
+
+        notificationCenter.add(request) { error in
+            if let error = error {
+                print("Error scheduling pet leaving notification: \(error)")
+            }
+        }
+    }
+
+    /// Cancel all pet notifications
+    func cancelPetNotifications() {
+        notificationCenter.removePendingNotificationRequests(withIdentifiers: [
+            petHungryIdentifier,
+            petSadIdentifier,
+            petLeavingIdentifier
+        ])
+    }
+
+    /// Cancel today's pet notifications (called after workout or treat)
+    func cancelTodayPetNotifications() {
+        // Remove pending notifications
+        cancelPetNotifications()
+
+        // Remove delivered notifications
+        notificationCenter.removeDeliveredNotifications(withIdentifiers: [
+            petHungryIdentifier,
+            petSadIdentifier,
+            petLeavingIdentifier
+        ])
+    }
+
+    // MARK: - Private Pet Notification Helper
+
+    private func schedulePetNotification(identifier: String, title: String, body: String, hour: Int, minute: Int) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.badge = 1
+
+        var dateComponents = DateComponents()
+        dateComponents.hour = hour
+        dateComponents.minute = minute
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+
+        notificationCenter.add(request) { error in
+            if let error = error {
+                print("Error scheduling pet notification (\(identifier)): \(error)")
+            }
+        }
     }
 
     // MARK: - Helper Methods

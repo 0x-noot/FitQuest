@@ -134,12 +134,13 @@ struct XPCalculator {
         return "+\(percentage)% streak bonus"
     }
 
-    /// Calculate total XP with all bonuses
+    /// Calculate total XP with all bonuses (including pet bonuses)
     static func calculateTotalXP(
         baseXP: Int,
         workoutType: WorkoutType,
         streak: Int,
         isFirstWorkoutOfDay: Bool,
+        pet: Pet? = nil,
         weight: Double? = nil,
         reps: Int? = nil,
         sets: Int? = nil,
@@ -170,8 +171,20 @@ struct XPCalculator {
             )
         }
 
+        // Apply pet species/level bonus FIRST (if pet is active)
+        if let pet = pet, !pet.isAway {
+            let petMultiplier = pet.species.xpMultiplier(for: workoutType, petLevel: pet.level)
+            xp = Int(Double(xp) * petMultiplier)
+        }
+
         // Apply streak multiplier
         xp = Int(Double(xp) * streakMultiplier(streak: streak))
+
+        // Apply happiness bonus (if pet is active and happy enough)
+        if let pet = pet, !pet.isAway {
+            let happinessMultiplier = PetManager.happinessXPMultiplier(happiness: pet.happiness)
+            xp = Int(Double(xp) * happinessMultiplier)
+        }
 
         // Add daily bonus
         if isFirstWorkoutOfDay {
@@ -179,5 +192,26 @@ struct XPCalculator {
         }
 
         return xp
+    }
+
+    /// Get pet bonus description for display
+    static func petBonusDescription(pet: Pet?, workoutType: WorkoutType) -> String? {
+        guard let pet = pet, !pet.isAway else { return nil }
+
+        var bonuses: [String] = []
+
+        // Species/level bonus
+        let speciesMultiplier = pet.species.xpMultiplier(for: workoutType, petLevel: pet.level)
+        if speciesMultiplier > 1.0 {
+            let percentage = Int((speciesMultiplier - 1.0) * 100)
+            bonuses.append("+\(percentage)% \(pet.species.displayName) Lv\(pet.level)")
+        }
+
+        // Happiness bonus
+        if PetManager.hasXPBonus(happiness: pet.happiness) {
+            bonuses.append("+10% happiness")
+        }
+
+        return bonuses.isEmpty ? nil : bonuses.joined(separator: ", ")
     }
 }

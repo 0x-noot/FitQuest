@@ -2,12 +2,26 @@ import SwiftUI
 
 struct CharacterDisplayView: View {
     let appearance: CharacterAppearance
+    var pet: Pet? = nil
     var size: CGFloat = 150
     var showShadow: Bool = true
 
     @State private var breatheAnimation = false
 
     var body: some View {
+        HStack(spacing: size * 0.2) {
+            // Character
+            characterView
+
+            // Pet companion (if exists)
+            if let pet = pet {
+                PetCompanionView(pet: pet, size: size * 0.45)
+                    .offset(y: size * 0.1)
+            }
+        }
+    }
+
+    private var characterView: some View {
         ZStack {
             // Shadow
             if showShadow {
@@ -158,15 +172,27 @@ struct AnyShape: Shape, @unchecked Sendable {
 
 #Preview {
     VStack(spacing: 30) {
+        // Character without pet
         CharacterDisplayView(appearance: CharacterAppearance(), size: 150)
-        CharacterDisplayView(appearance: {
-            let c = CharacterAppearance()
-            c.skinTone = 3
-            c.hairColor = 2
-            c.top = 1
-            c.bottom = 2
-            return c
-        }(), size: 120)
+
+        // Character with pet
+        CharacterDisplayView(
+            appearance: {
+                let c = CharacterAppearance()
+                c.skinTone = 3
+                c.hairColor = 2
+                c.top = 1
+                c.bottom = 2
+                return c
+            }(),
+            pet: {
+                let pet = Pet(name: "Fluffy", species: .fox)
+                pet.happiness = 95
+                pet.level = 5
+                return pet
+            }(),
+            size: 120
+        )
     }
     .padding()
     .background(Theme.background)

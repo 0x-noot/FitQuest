@@ -41,6 +41,11 @@ final class Player {
     @Relationship(deleteRule: .cascade, inverse: \CharacterAppearance.player)
     var character: CharacterAppearance?
 
+    // Pet system
+    var essenceCurrency: Int
+    @Relationship(deleteRule: .cascade, inverse: \Pet.player)
+    var pet: Pet?
+
     // Computed properties
     var currentLevel: Int {
         LevelManager.levelFor(xp: totalXP)
@@ -178,6 +183,9 @@ final class Player {
         self.lastWeekCompleted = nil
         self.daysWorkedOutThisWeek = 0
         self.lastWeeklyStreakReset = Date()
+
+        // Pet system defaults
+        self.essenceCurrency = 0
     }
 
     /// Add XP and return if leveled up

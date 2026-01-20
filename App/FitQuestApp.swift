@@ -12,7 +12,8 @@ struct FitQuestApp: App {
             Player.self,
             Workout.self,
             WorkoutTemplate.self,
-            CharacterAppearance.self
+            CharacterAppearance.self,
+            Pet.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

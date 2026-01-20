@@ -173,6 +173,7 @@ struct CustomWorkoutInputSheet: View {
             workoutType: workoutType,
             streak: player.currentStreak,
             isFirstWorkoutOfDay: player.isFirstWorkoutOfDay,
+            pet: player.pet,
             weight: workoutType == .strength && usesWeight ? weight : nil,
             reps: workoutType == .strength ? reps : nil,
             sets: workoutType == .strength ? sets : nil,
@@ -180,6 +181,14 @@ struct CustomWorkoutInputSheet: View {
             steps: Int(steps),
             calories: Int(calories)
         )
+    }
+
+    private var petBonusText: String? {
+        XPCalculator.petBonusDescription(pet: player.pet, workoutType: workoutType)
+    }
+
+    private var essenceEarned: Int {
+        PetManager.essenceEarnedForWorkout(xp: estimatedXP)
     }
 
     var body: some View {
@@ -397,6 +406,20 @@ struct CustomWorkoutInputSheet: View {
                 }
             }
 
+            if let petBonus = petBonusText {
+                HStack {
+                    if let pet = player.pet {
+                        Image(systemName: pet.species.iconName)
+                            .font(.system(size: 12))
+                            .foregroundColor(pet.mood.color)
+                    }
+                    Text(petBonus)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Theme.primary)
+                    Spacer()
+                }
+            }
+
             if let bonus = XPCalculator.streakBonusDescription(streak: player.currentStreak) {
                 HStack {
                     Image(systemName: "flame.fill")
@@ -405,6 +428,30 @@ struct CustomWorkoutInputSheet: View {
                     Text(bonus)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundColor(Theme.streak)
+                    Spacer()
+                }
+            }
+
+            if player.isFirstWorkoutOfDay {
+                HStack {
+                    Image(systemName: "sunrise.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(Theme.warning)
+                    Text("+\(XPCalculator.dailyBonusXP) first workout bonus")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Theme.warning)
+                    Spacer()
+                }
+            }
+
+            if player.pet != nil {
+                HStack {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 12))
+                        .foregroundColor(Theme.warning)
+                    Text("+\(essenceEarned) Essence")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Theme.warning)
                     Spacer()
                 }
             }
