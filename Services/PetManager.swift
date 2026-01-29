@@ -77,32 +77,6 @@ struct PetManager {
         return true
     }
 
-    // MARK: - Pet Leveling
-
-    /// Calculate cost to level up from current level
-    static func levelUpCost(currentLevel: Int) -> Int {
-        // Formula: 50 × (level+1)^1.5
-        // Level 1->2: 70, Level 2->3: 130, Level 3->4: 200, Level 4->5: 280
-        Int(50.0 * pow(Double(currentLevel + 1), 1.5))
-    }
-
-    /// Check if player can level up pet
-    static func canLevelUp(pet: Pet, player: Player) -> Bool {
-        let cost = levelUpCost(currentLevel: pet.level)
-        return player.essenceCurrency >= cost
-    }
-
-    /// Level up pet (deduct essence and increment level)
-    static func levelUpPet(pet: Pet, player: Player) -> Bool {
-        let cost = levelUpCost(currentLevel: pet.level)
-        guard player.essenceCurrency >= cost else { return false }
-
-        player.essenceCurrency -= cost
-        pet.level += 1
-
-        return true
-    }
-
     // MARK: - Recovery System
 
     /// Check if pet can be recovered with workouts (3 in last 7 days)
@@ -148,6 +122,47 @@ struct PetManager {
         return true
     }
 
+    // MARK: - Play Interaction System
+
+    /// Reset play sessions if it's a new day
+    static func resetPlaySessionsIfNeeded(pet: Pet) {
+        guard let lastPlay = pet.lastPlayDate else { return }
+        let calendar = Calendar.current
+        if !calendar.isDateInToday(lastPlay) {
+            pet.playSessionsToday = 0
+            pet.tapCount = 0
+        }
+    }
+
+    /// Handle a tap on the pet. Returns the result of the tap.
+    static func handlePetTap(pet: Pet) -> PetTapResult {
+        guard !pet.isAway else { return .petIsAway }
+
+        resetPlaySessionsIfNeeded(pet: pet)
+
+        guard pet.playSessionsToday < Pet.maxPlaySessionsPerDay else {
+            return .noSessionsRemaining
+        }
+
+        // Increment tap count
+        pet.tapCount += 1
+
+        // Check if we've completed a play session
+        if pet.tapCount >= Pet.tapsPerSession {
+            // Complete the session
+            pet.tapCount = 0
+            pet.playSessionsToday += 1
+            pet.lastPlayDate = Date()
+
+            // Add happiness
+            modifyHappiness(pet: pet, amount: Pet.happinessPerSession)
+
+            return .sessionComplete(sessionsRemaining: Pet.maxPlaySessionsPerDay - pet.playSessionsToday)
+        }
+
+        return .tapRegistered(tapsRemaining: Pet.tapsPerSession - pet.tapCount)
+    }
+
     // MARK: - Utility
 
     /// Calculate essence earned from workout XP
@@ -164,4 +179,13 @@ struct PetManager {
     static func hasXPBonus(happiness: Double) -> Bool {
         happiness >= 90.0
     }
+}
+
+// MARK: - Pet Tap Result
+
+enum PetTapResult {
+    case tapRegistered(tapsRemaining: Int)
+    case sessionComplete(sessionsRemaining: Int)
+    case noSessionsRemaining
+    case petIsAway
 }

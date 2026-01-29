@@ -9,80 +9,68 @@ struct OnboardingPetStep: View {
     @FocusState private var isNameFieldFocused: Bool
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: PixelScale.px(3)) {
             // Header
-            VStack(spacing: 8) {
-                Text("Choose Your Companion")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
+            VStack(spacing: PixelScale.px(1)) {
+                PixelText("CHOOSE YOUR", size: .medium, color: PixelTheme.textSecondary)
+                PixelText("COMPANION", size: .xlarge)
 
-                Text("Your pet will motivate you and earn bonuses!")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-                    .multilineTextAlignment(.center)
+                PixelText("YOUR PET GROWS AS YOU TRAIN!", size: .small, color: PixelTheme.textSecondary)
             }
-            .padding(.top, 20)
-
-            Spacer()
+            .padding(.top, PixelScale.px(2))
 
             if !showNameInput {
                 // Species selection
-                VStack(spacing: 12) {
-                    ForEach(PetSpecies.allCases, id: \.self) { species in
-                        PetSelectionCard(
-                            species: species,
-                            isSelected: selectedSpecies == species,
-                            onTap: {
-                                selectedSpecies = species
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showNameInput = true
+                ScrollView {
+                    VStack(spacing: PixelScale.px(2)) {
+                        ForEach(PetSpecies.allCases, id: \.self) { species in
+                            PixelPetSelectionCard(
+                                species: species,
+                                isSelected: selectedSpecies == species,
+                                onTap: {
+                                    selectedSpecies = species
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showNameInput = true
+                                    }
+                                    // Auto-focus name field after animation
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                        isNameFieldFocused = true
+                                    }
                                 }
-                                // Auto-focus name field after animation
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                    isNameFieldFocused = true
-                                }
-                            }
-                        )
+                            )
+                        }
                     }
+                    .padding(.vertical, PixelScale.px(2))
                 }
             } else {
                 // Name input
                 if let species = selectedSpecies {
-                    VStack(spacing: 20) {
-                        // Show selected pet
-                        VStack(spacing: 12) {
-                            ZStack {
-                                Circle()
-                                    .fill(Theme.primary.opacity(0.2))
-                                    .frame(width: 120, height: 120)
+                    Spacer()
 
-                                Image(systemName: species.iconName)
-                                    .font(.system(size: 60))
-                                    .foregroundColor(Theme.primary)
+                    VStack(spacing: PixelScale.px(4)) {
+                        // Show selected pet with pixel sprite
+                        PixelPanel(title: species.displayName.uppercased()) {
+                            VStack(spacing: PixelScale.px(2)) {
+                                // Pet sprite preview
+                                PixelSpriteView(
+                                    sprite: PetSpriteLibrary.sprite(for: species, stage: .baby),
+                                    pixelSize: 4
+                                )
+                                .frame(width: 64, height: 64)
+
+                                PixelText(species.personality.uppercased(), size: .small, color: PixelTheme.textSecondary)
+
+                                PixelText(species.description.uppercased(), size: .small, color: PixelTheme.textSecondary)
+                                    .multilineTextAlignment(.center)
                             }
-
-                            Text("Your \(species.displayName)")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(Theme.textPrimary)
-
-                            Text(species.description)
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Theme.textSecondary)
-                                .multilineTextAlignment(.center)
                         }
-                        .padding(.vertical, 20)
 
                         // Name input
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Name your pet")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Theme.textSecondary)
-
-                            TextField("Enter name", text: $petName)
-                                .font(.system(size: 18))
-                                .padding(16)
-                                .background(Theme.cardBackground)
-                                .cornerRadius(12)
+                        PixelPanel(title: "NAME YOUR PET") {
+                            TextField("ENTER NAME", text: $petName)
+                                .font(.custom("Menlo-Bold", size: PixelFontSize.medium.pointSize))
+                                .foregroundColor(PixelTheme.text)
+                                .textInputAutocapitalization(.characters)
                                 .focused($isNameFieldFocused)
                                 .submitLabel(.done)
                                 .onSubmit {
@@ -98,81 +86,80 @@ struct OnboardingPetStep: View {
                                 petName = ""
                             }
                         } label: {
-                            Text("Choose Different Pet")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Theme.textSecondary)
+                            PixelText("< CHOOSE DIFFERENT", size: .small, color: PixelTheme.textSecondary)
                         }
                     }
                     .transition(.opacity.combined(with: .scale))
+                    .padding(.horizontal, PixelScale.px(4))
+
+                    Spacer()
                 }
             }
-
-            Spacer()
 
             // Continue button
             if showNameInput && !petName.trimmingCharacters(in: .whitespaces).isEmpty {
-                OnboardingProgressBar(currentStep: 0, totalSteps: 1)
-                    .padding(.bottom, 8)
-
-                PrimaryButton("Continue", icon: "arrow.right") {
+                PixelButton("CONTINUE >", style: .primary) {
                     onContinue()
                 }
+                .padding(.horizontal, PixelScale.px(4))
             }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.vertical, PixelScale.px(4))
     }
 }
 
-struct PetSelectionCard: View {
+// MARK: - Pixel Pet Selection Card
+
+struct PixelPetSelectionCard: View {
     let species: PetSpecies
     let isSelected: Bool
     let onTap: () -> Void
 
+    private var speciesIcon: PixelIcon {
+        switch species {
+        case .plant: return .leaf
+        case .cat: return .cat
+        case .dog: return .dog
+        case .wolf: return .dog
+        case .dragon: return .dragon
+        }
+    }
+
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 16) {
-                // Pet icon
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? Theme.primary.opacity(0.2) : Theme.elevated)
-                        .frame(width: 60, height: 60)
-
-                    Image(systemName: species.iconName)
-                        .font(.system(size: 28))
-                        .foregroundColor(isSelected ? Theme.primary : Theme.textSecondary)
-                }
+            HStack(spacing: PixelScale.px(2)) {
+                // Pet sprite preview
+                PixelSpriteView(
+                    sprite: PetSpriteLibrary.sprite(for: species, stage: .baby),
+                    pixelSize: 2
+                )
+                .frame(width: 32, height: 32)
 
                 // Pet info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(species.displayName)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Theme.textPrimary)
+                VStack(alignment: .leading, spacing: PixelScale.px(1)) {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelText(species.displayName.uppercased(), size: .small)
 
-                    Text(species.description)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-                        .lineLimit(2)
+                        PixelText(species.personality.uppercased(), size: .small, color: PixelTheme.textSecondary)
+                    }
+
+                    PixelText(species.description.uppercased(), size: .small, color: PixelTheme.textSecondary)
+                        .lineLimit(1)
                 }
 
                 Spacer()
 
                 // Selection indicator
                 if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(Theme.primary)
+                    PixelIconView(icon: .check, size: 16)
                 }
             }
-            .padding(16)
-            .background(isSelected ? Theme.primary.opacity(0.1) : Theme.cardBackground)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Theme.primary : Color.clear, lineWidth: 2)
-            )
+            .padding(PixelScale.px(2))
+            .background(isSelected ? PixelTheme.gbDark.opacity(0.3) : PixelTheme.cardBackground)
+            .pixelOutline()
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, PixelScale.px(4))
     }
 }
 
@@ -182,6 +169,5 @@ struct PetSelectionCard: View {
         petName: .constant(""),
         onContinue: {}
     )
-    .preferredColorScheme(.dark)
-    .background(Theme.background)
+    .background(PixelTheme.background)
 }

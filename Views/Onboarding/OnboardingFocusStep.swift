@@ -5,28 +5,21 @@ struct OnboardingFocusStep: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: PixelScale.px(4)) {
             // Header
-            VStack(spacing: 8) {
-                Text("Focus areas")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
-
-                Text("Which muscle groups do you want to prioritize?")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-                    .multilineTextAlignment(.center)
+            VStack(spacing: PixelScale.px(1)) {
+                PixelText("FOCUS AREAS", size: .xlarge)
+                PixelText("WHICH MUSCLES TO PRIORITIZE?", size: .small, color: PixelTheme.textSecondary)
             }
-            .padding(.top, 8)
+            .padding(.top, PixelScale.px(2))
 
             // Focus area options
             ScrollView {
-                VStack(spacing: 10) {
+                VStack(spacing: PixelScale.px(2)) {
                     ForEach(FocusArea.allCases) { area in
-                        MultiSelectCard(
-                            title: area.displayName,
-                            description: area.description,
-                            iconName: area.iconName,
+                        PixelMultiSelectCard(
+                            title: area.displayName.uppercased(),
+                            description: area.description.uppercased(),
                             isSelected: selectedAreas.contains(area)
                         ) {
                             if selectedAreas.contains(area) {
@@ -37,17 +30,18 @@ struct OnboardingFocusStep: View {
                         }
                     }
                 }
+                .padding(.horizontal, PixelScale.px(4))
             }
 
             // Continue button
-            PrimaryButton("Continue", icon: "arrow.right") {
+            PixelButton("CONTINUE >", style: .primary) {
                 onContinue()
             }
             .disabled(selectedAreas.isEmpty)
             .opacity(selectedAreas.isEmpty ? 0.5 : 1)
+            .padding(.horizontal, PixelScale.px(4))
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.vertical, PixelScale.px(4))
     }
 }
 
@@ -55,5 +49,5 @@ struct OnboardingFocusStep: View {
     OnboardingFocusStep(
         selectedAreas: .constant([.chest, .back])
     ) {}
-    .background(Theme.background)
+    .background(PixelTheme.background)
 }

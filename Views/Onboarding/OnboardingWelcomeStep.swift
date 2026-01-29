@@ -1,76 +1,45 @@
 import SwiftUI
 
 struct OnboardingWelcomeStep: View {
-    @Binding var name: String
-    @Binding var character: CharacterAppearance
     let onContinue: () -> Void
 
-    @FocusState private var isNameFocused: Bool
-
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: PixelScale.px(4)) {
             Spacer()
 
-            // Character preview
-            CharacterDisplayView(appearance: character, size: 140)
-                .padding(.bottom, 8)
+            // Pet icon preview using pixel sprite
+            PixelIconView(icon: .paw, size: 64)
+                .padding(PixelScale.px(4))
+                .background(PixelTheme.cardBackground)
+                .pixelBorder(thickness: 2)
 
             // Title
-            VStack(spacing: 8) {
-                Text("Welcome to FitQuest!")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
+            VStack(spacing: PixelScale.px(2)) {
+                PixelText("WELCOME TO", size: .medium, color: PixelTheme.textSecondary)
+                PixelText("FITOGATCHI!", size: .xlarge)
 
-                Text("Your fitness journey starts here")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+                PixelText("YOUR FITNESS PET AWAITS", size: .small, color: PixelTheme.textSecondary)
             }
 
-            // Name input
-            VStack(alignment: .leading, spacing: 8) {
-                Text("What should we call you?")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Theme.textSecondary)
-
-                TextField("Your name", text: $name)
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Theme.textPrimary)
-                    .padding(16)
-                    .background(Theme.cardBackground)
-                    .cornerRadius(12)
-                    .focused($isNameFocused)
-                    .submitLabel(.done)
-                    .onSubmit {
-                        if !name.trimmingCharacters(in: .whitespaces).isEmpty {
-                            onContinue()
-                        }
-                    }
-            }
-            .padding(.top, 16)
+            // Tagline
+            PixelText("RAISE YOUR PET BY WORKING OUT!", size: .small, color: PixelTheme.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, PixelScale.px(4))
+                .padding(.top, PixelScale.px(4))
 
             Spacer()
 
             // Continue button
-            PrimaryButton("Continue", icon: "arrow.right") {
+            PixelButton("GET STARTED >", style: .primary) {
                 onContinue()
             }
-            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-            .opacity(name.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
+            .padding(.horizontal, PixelScale.px(4))
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                isNameFocused = true
-            }
-        }
+        .padding(.vertical, PixelScale.px(4))
     }
 }
 
 #Preview {
-    OnboardingWelcomeStep(
-        name: .constant(""),
-        character: .constant(CharacterAppearance())
-    ) {}
-    .background(Theme.background)
+    OnboardingWelcomeStep() {}
+    .background(PixelTheme.background)
 }

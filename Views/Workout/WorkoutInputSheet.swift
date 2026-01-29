@@ -63,20 +63,53 @@ struct WorkoutInputSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            // Custom pixel title bar
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    PixelText("< BACK", size: .small)
+                }
+
+                Spacer()
+
+                PixelText("LOG WORKOUT", size: .medium)
+
+                Spacer()
+
+                // Spacer for balance
+                PixelText("      ", size: .small)
+            }
+            .padding(.horizontal, PixelScale.px(2))
+            .padding(.vertical, PixelScale.px(2))
+            .background(PixelTheme.gbDark)
+
+            Rectangle()
+                .fill(PixelTheme.border)
+                .frame(height: PixelScale.px(1))
+
+            // Content
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: PixelScale.px(3)) {
                     // Workout header
-                    HStack(spacing: 12) {
-                        Image(systemName: template.iconName)
-                            .font(.system(size: 28))
-                            .foregroundColor(template.workoutType == .cardio ? Theme.secondary : Theme.primary)
+                    PixelPanel(title: template.name.uppercased()) {
+                        HStack(spacing: PixelScale.px(2)) {
+                            PixelIconView(
+                                icon: template.workoutType == .cardio ? .run : .dumbbell,
+                                size: 24
+                            )
 
-                        Text(template.name)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(Theme.textPrimary)
+                            PixelText(
+                                template.workoutType == .cardio ? "CARDIO" : "STRENGTH",
+                                size: .small,
+                                color: PixelTheme.textSecondary
+                            )
 
-                        Spacer()
+                            Spacer()
+
+                            PixelText("BASE: \(template.baseXP) XP", size: .small, color: PixelTheme.textSecondary)
+                        }
                     }
 
                     // Input fields
@@ -86,391 +119,325 @@ struct WorkoutInputSheet: View {
                         cardioInputs
                     }
 
-                    Divider()
-                        .background(Theme.elevated)
-
                     // XP Preview
                     xpPreview
 
                     // Complete button
-                    PrimaryButton("Complete Workout", icon: "checkmark") {
+                    PixelButton("COMPLETE", style: .primary) {
                         completeWorkout()
                     }
-                    .padding(.top, 8)
+                    .padding(.top, PixelScale.px(2))
                 }
-                .padding(20)
-            }
-            .background(Theme.background)
-            .navigationTitle("Log Workout")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.cardBackground, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Back") {
-                        dismiss()
-                    }
-                    .foregroundColor(Theme.textSecondary)
-                }
+                .padding(PixelScale.px(2))
             }
         }
+        .background(PixelTheme.background)
     }
 
+    // MARK: - Strength Inputs
+
     private var strengthInputs: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: PixelScale.px(2)) {
             // Weight
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Weight")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-
-                HStack {
-                    Button {
+            PixelPanel(title: "WEIGHT") {
+                HStack(spacing: PixelScale.px(2)) {
+                    PixelSmallButton(label: "-5") {
                         weight = max(0, weight - 5)
-                    } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(Theme.primary)
                     }
 
-                    TextField("0", value: $weight, format: .number)
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
-                        .multilineTextAlignment(.center)
-                        .keyboardType(.decimalPad)
-                        .frame(width: 100)
+                    Spacer()
 
-                    Text("lbs")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Theme.textMuted)
+                    PixelText("\(Int(weight))", size: .xlarge)
 
-                    Button {
+                    PixelText("LBS", size: .small, color: PixelTheme.textSecondary)
+
+                    Spacer()
+
+                    PixelSmallButton(label: "+5") {
                         weight += 5
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(Theme.primary)
                     }
                 }
-                .frame(maxWidth: .infinity)
             }
-            .padding(16)
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
 
-            HStack(spacing: 16) {
+            HStack(spacing: PixelScale.px(2)) {
                 // Reps
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Reps")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
+                PixelPanel(title: "REPS") {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelSmallButton(label: "-") {
+                            reps = max(1, reps - 1)
+                        }
 
-                    Stepper(value: $reps, in: 1...100) {
-                        Text("\(reps)")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(Theme.textPrimary)
+                        Spacer()
+
+                        PixelText("\(reps)", size: .large)
+
+                        Spacer()
+
+                        PixelSmallButton(label: "+") {
+                            reps += 1
+                        }
                     }
                 }
-                .padding(16)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
 
                 // Sets
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Sets")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
+                PixelPanel(title: "SETS") {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelSmallButton(label: "-") {
+                            sets = max(1, sets - 1)
+                        }
 
-                    Stepper(value: $sets, in: 1...20) {
-                        Text("\(sets)")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(Theme.textPrimary)
+                        Spacer()
+
+                        PixelText("\(sets)", size: .large)
+
+                        Spacer()
+
+                        PixelSmallButton(label: "+") {
+                            sets += 1
+                        }
                     }
                 }
-                .padding(16)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
             }
 
             // Volume display
             if weight > 0 && reps > 0 && sets > 0 {
                 HStack {
-                    Text("Total Volume:")
-                        .foregroundColor(Theme.textSecondary)
-                    Text("\(Int(weight * Double(reps * sets)).formatted()) lbs")
-                        .foregroundColor(Theme.textPrimary)
-                        .fontWeight(.semibold)
+                    PixelText("VOLUME:", size: .small, color: PixelTheme.textSecondary)
+                    Spacer()
+                    PixelText("\(Int(weight * Double(reps * sets))) LBS", size: .small)
                 }
-                .font(.system(size: 14))
+                .padding(.horizontal, PixelScale.px(2))
             }
         }
     }
 
-    private var cardioInputs: some View {
-        VStack(spacing: 20) {
-            // Duration
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Duration")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+    // MARK: - Cardio Inputs
 
-                HStack {
-                    Button {
+    private var cardioInputs: some View {
+        VStack(spacing: PixelScale.px(2)) {
+            // Duration
+            PixelPanel(title: "DURATION") {
+                HStack(spacing: PixelScale.px(2)) {
+                    PixelSmallButton(label: "-5") {
                         durationMinutes = max(1, durationMinutes - 5)
-                    } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(Theme.secondary)
                     }
 
-                    Text("\(durationMinutes)")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
-                        .frame(width: 80)
+                    Spacer()
 
-                    Text("min")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Theme.textMuted)
+                    PixelText("\(durationMinutes)", size: .xlarge)
 
-                    Button {
+                    PixelText("MIN", size: .small, color: PixelTheme.textSecondary)
+
+                    Spacer()
+
+                    PixelSmallButton(label: "+5") {
                         durationMinutes += 5
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(Theme.secondary)
                     }
                 }
-                .frame(maxWidth: .infinity)
             }
-            .padding(16)
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
 
             // Walking-specific inputs
             if isWalkingWorkout {
                 walkingIntensityInputs
             }
 
-            HStack(spacing: 16) {
+            HStack(spacing: PixelScale.px(2)) {
                 // Steps (optional)
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Steps")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Theme.textSecondary)
-                        Text("(optional)")
-                            .font(.system(size: 11))
-                            .foregroundColor(Theme.textMuted)
+                PixelPanel(title: "STEPS") {
+                    VStack(spacing: PixelScale.px(1)) {
+                        PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
+                        TextField("0", text: $steps)
+                            .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
+                            .foregroundColor(PixelTheme.text)
+                            .multilineTextAlignment(.center)
+                            .keyboardType(.numberPad)
                     }
-
-                    TextField("0", text: $steps)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
-                        .keyboardType(.numberPad)
                 }
-                .padding(16)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
 
                 // Calories (optional)
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Calories")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Theme.textSecondary)
-                        Text("(optional)")
-                            .font(.system(size: 11))
-                            .foregroundColor(Theme.textMuted)
+                PixelPanel(title: "CALORIES") {
+                    VStack(spacing: PixelScale.px(1)) {
+                        PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
+                        TextField("0", text: $calories)
+                            .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
+                            .foregroundColor(PixelTheme.text)
+                            .multilineTextAlignment(.center)
+                            .keyboardType(.numberPad)
                     }
-
-                    TextField("0", text: $calories)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
-                        .keyboardType(.numberPad)
                 }
-                .padding(16)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
             }
         }
     }
+
+    // MARK: - Walking Intensity Inputs
 
     private var walkingIntensityInputs: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: PixelScale.px(2)) {
             // Incline
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Incline")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
+            PixelPanel(title: "INCLINE") {
+                VStack(spacing: PixelScale.px(1)) {
+                    HStack {
+                        PixelText(String(format: "%.1f%%", incline), size: .medium)
+                        Spacer()
+                        if walkingIntensityBonus.inclineBonus > 0 {
+                            PixelText("+\(walkingIntensityBonus.inclineBonus)%", size: .small, color: PixelTheme.gbDark)
+                        }
+                    }
 
-                    Spacer()
+                    // Pixel-style slider using buttons
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelSmallButton(label: "-") {
+                            incline = max(0, incline - 0.5)
+                        }
 
-                    Text("\(String(format: "%.1f", incline))%")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
+                        PixelProgressBar(
+                            progress: incline / 15.0,
+                            segments: 10,
+                            height: PixelScale.px(2),
+                            onSegmentTap: { segment in
+                                // Each segment represents 1.5% incline (15% / 10 segments)
+                                // Tap on segment sets value to the end of that segment
+                                incline = Double(segment + 1) * 1.5
+                            }
+                        )
 
-                    if walkingIntensityBonus.inclineBonus > 0 {
-                        Text("+\(walkingIntensityBonus.inclineBonus)%")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Theme.success)
+                        PixelSmallButton(label: "+") {
+                            incline = min(15, incline + 0.5)
+                        }
+                    }
+
+                    HStack {
+                        PixelText("FLAT", size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                        PixelText("15%", size: .small, color: PixelTheme.textSecondary)
                     }
                 }
-
-                Slider(value: $incline, in: 0...15, step: 0.5)
-                    .tint(Theme.secondary)
-
-                HStack {
-                    Text("Flat")
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.textMuted)
-                    Spacer()
-                    Text("15%")
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.textMuted)
-                }
             }
-            .padding(16)
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
 
             // Speed
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Speed")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
+            PixelPanel(title: "SPEED") {
+                VStack(spacing: PixelScale.px(1)) {
+                    HStack {
+                        PixelText(String(format: "%.1f MPH", speed), size: .medium)
+                        Spacer()
+                        if walkingIntensityBonus.speedBonus > 0 {
+                            PixelText("+\(walkingIntensityBonus.speedBonus)%", size: .small, color: PixelTheme.gbDark)
+                        }
+                    }
 
-                    Spacer()
+                    // Pixel-style slider using buttons
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelSmallButton(label: "-") {
+                            speed = max(1.0, speed - 0.1)
+                        }
 
-                    Text("\(String(format: "%.1f", speed)) mph")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
+                        PixelProgressBar(
+                            progress: (speed - 1.0) / 4.0,
+                            segments: 10,
+                            height: PixelScale.px(2),
+                            onSegmentTap: { segment in
+                                // Speed range is 1.0-5.0 (4.0 range), 10 segments = 0.4 per segment
+                                // Tap on segment sets value to the end of that segment
+                                speed = 1.0 + Double(segment + 1) * 0.4
+                            }
+                        )
 
-                    if walkingIntensityBonus.speedBonus > 0 {
-                        Text("+\(walkingIntensityBonus.speedBonus)%")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Theme.success)
+                        PixelSmallButton(label: "+") {
+                            speed = min(5.0, speed + 0.1)
+                        }
+                    }
+
+                    HStack {
+                        PixelText("1.0", size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                        PixelText("5.0", size: .small, color: PixelTheme.textSecondary)
                     }
                 }
-
-                Slider(value: $speed, in: 1.0...5.0, step: 0.1)
-                    .tint(Theme.secondary)
-
-                HStack {
-                    Text("Slow (1.0)")
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.textMuted)
-                    Spacer()
-                    Text("Fast (5.0)")
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.textMuted)
-                }
             }
-            .padding(16)
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
         }
     }
+
+    // MARK: - XP Preview
 
     private var xpPreview: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("Estimated XP")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-
-                Spacer()
-
-                HStack(spacing: 4) {
-                    Text("+\(estimatedXP)")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.success)
-
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(Theme.warning)
-                }
-            }
-
-            // Walking intensity bonuses
-            if isWalkingWorkout && (walkingIntensityBonus.inclineBonus > 0 || walkingIntensityBonus.speedBonus > 0) {
-                HStack {
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.secondary)
-
-                    if walkingIntensityBonus.inclineBonus > 0 && walkingIntensityBonus.speedBonus > 0 {
-                        Text("+\(walkingIntensityBonus.inclineBonus)% incline, +\(walkingIntensityBonus.speedBonus)% speed bonus")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Theme.secondary)
-                    } else if walkingIntensityBonus.inclineBonus > 0 {
-                        Text("+\(walkingIntensityBonus.inclineBonus)% incline bonus")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Theme.secondary)
-                    } else {
-                        Text("+\(walkingIntensityBonus.speedBonus)% speed bonus")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Theme.secondary)
-                    }
-                    Spacer()
-                }
-            }
-
-            if let petBonus = petBonusText {
+        PixelPanel(title: "REWARDS") {
+            VStack(spacing: PixelScale.px(1)) {
+                // Main XP display
                 HStack {
                     if let pet = player.pet {
-                        Image(systemName: pet.species.iconName)
-                            .font(.system(size: 12))
-                            .foregroundColor(pet.mood.color)
+                        PixelText("\(pet.name) EARNS", size: .small, color: PixelTheme.textSecondary)
+                    } else {
+                        PixelText("XP EARNED", size: .small, color: PixelTheme.textSecondary)
                     }
-                    Text(petBonus)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.primary)
-                    Spacer()
-                }
-            }
 
-            if let bonus = streakBonusText {
-                HStack {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.streak)
-                    Text(bonus)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.streak)
                     Spacer()
-                }
-            }
 
-            if player.isFirstWorkoutOfDay {
-                HStack {
-                    Image(systemName: "sunrise.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.warning)
-                    Text("+\(XPCalculator.dailyBonusXP) first workout bonus")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.warning)
-                    Spacer()
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelText("+\(estimatedXP)", size: .large)
+                        PixelText("XP", size: .small)
+                    }
                 }
-            }
 
-            if player.pet != nil {
-                HStack {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.warning)
-                    Text("+\(essenceEarned) Essence")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.warning)
-                    Spacer()
+                Rectangle()
+                    .fill(PixelTheme.border)
+                    .frame(height: PixelScale.px(1))
+                    .padding(.vertical, PixelScale.px(1))
+
+                // Walking intensity bonuses
+                if isWalkingWorkout && (walkingIntensityBonus.inclineBonus > 0 || walkingIntensityBonus.speedBonus > 0) {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .bolt, size: 12)
+                        if walkingIntensityBonus.inclineBonus > 0 && walkingIntensityBonus.speedBonus > 0 {
+                            PixelText("+\(walkingIntensityBonus.inclineBonus)% INC +\(walkingIntensityBonus.speedBonus)% SPD", size: .small, color: PixelTheme.textSecondary)
+                        } else if walkingIntensityBonus.inclineBonus > 0 {
+                            PixelText("+\(walkingIntensityBonus.inclineBonus)% INCLINE", size: .small, color: PixelTheme.textSecondary)
+                        } else {
+                            PixelText("+\(walkingIntensityBonus.speedBonus)% SPEED", size: .small, color: PixelTheme.textSecondary)
+                        }
+                        Spacer()
+                    }
+                }
+
+                // Pet bonus
+                if let petBonus = petBonusText {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .paw, size: 12)
+                        PixelText(petBonus.uppercased(), size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
+                }
+
+                // Streak bonus
+                if let bonus = streakBonusText {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .flame, size: 12)
+                        PixelText(bonus.uppercased(), size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
+                }
+
+                // First workout bonus
+                if player.isFirstWorkoutOfDay {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .sun, size: 12)
+                        PixelText("+\(XPCalculator.dailyBonusXP) FIRST WORKOUT", size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
+                }
+
+                // Essence earned
+                if player.pet != nil {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .sparkle, size: 12)
+                        PixelText("+\(essenceEarned) ESSENCE", size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
                 }
             }
         }
-        .padding(16)
-        .background(Theme.elevated)
-        .cornerRadius(12)
     }
+
+    // MARK: - Complete Workout
 
     private func completeWorkout() {
         let workout: Workout

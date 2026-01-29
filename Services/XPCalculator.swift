@@ -173,7 +173,7 @@ struct XPCalculator {
 
         // Apply pet species/level bonus FIRST (if pet is active)
         if let pet = pet, !pet.isAway {
-            let petMultiplier = pet.species.xpMultiplier(for: workoutType, petLevel: pet.level)
+            let petMultiplier = pet.species.xpMultiplier(for: workoutType, petLevel: pet.currentLevel)
             xp = Int(Double(xp) * petMultiplier)
         }
 
@@ -201,10 +201,10 @@ struct XPCalculator {
         var bonuses: [String] = []
 
         // Species/level bonus
-        let speciesMultiplier = pet.species.xpMultiplier(for: workoutType, petLevel: pet.level)
+        let speciesMultiplier = pet.species.xpMultiplier(for: workoutType, petLevel: pet.currentLevel)
         if speciesMultiplier > 1.0 {
             let percentage = Int((speciesMultiplier - 1.0) * 100)
-            bonuses.append("+\(percentage)% \(pet.species.displayName) Lv\(pet.level)")
+            bonuses.append("+\(percentage)% \(pet.species.displayName) Lv\(pet.currentLevel)")
         }
 
         // Happiness bonus

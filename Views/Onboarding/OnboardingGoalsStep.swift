@@ -5,27 +5,21 @@ struct OnboardingGoalsStep: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: PixelScale.px(4)) {
             // Header
-            VStack(spacing: 8) {
-                Text("What are your goals?")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
-
-                Text("Select all that apply")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+            VStack(spacing: PixelScale.px(1)) {
+                PixelText("YOUR GOALS?", size: .xlarge)
+                PixelText("SELECT ALL THAT APPLY", size: .small, color: PixelTheme.textSecondary)
             }
-            .padding(.top, 8)
+            .padding(.top, PixelScale.px(2))
 
             // Goals list
             ScrollView {
-                VStack(spacing: 10) {
+                VStack(spacing: PixelScale.px(2)) {
                     ForEach(FitnessGoal.allCases) { goal in
-                        MultiSelectCard(
-                            title: goal.displayName,
-                            description: goal.description,
-                            iconName: goal.iconName,
+                        PixelMultiSelectCard(
+                            title: goal.displayName.uppercased(),
+                            description: goal.description.uppercased(),
                             isSelected: selectedGoals.contains(goal)
                         ) {
                             if selectedGoals.contains(goal) {
@@ -36,17 +30,47 @@ struct OnboardingGoalsStep: View {
                         }
                     }
                 }
+                .padding(.horizontal, PixelScale.px(4))
             }
 
             // Continue button
-            PrimaryButton("Continue", icon: "arrow.right") {
+            PixelButton("CONTINUE >", style: .primary) {
                 onContinue()
             }
             .disabled(selectedGoals.isEmpty)
             .opacity(selectedGoals.isEmpty ? 0.5 : 1)
+            .padding(.horizontal, PixelScale.px(4))
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.vertical, PixelScale.px(4))
+    }
+}
+
+// MARK: - Pixel Multi-Select Card
+
+struct PixelMultiSelectCard: View {
+    let title: String
+    let description: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: PixelScale.px(2)) {
+                PixelCheckbox(isChecked: isSelected)
+
+                VStack(alignment: .leading, spacing: PixelScale.px(1)) {
+                    PixelText(title, size: .small)
+                    PixelText(description, size: .small, color: PixelTheme.textSecondary)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+            }
+            .padding(PixelScale.px(2))
+            .background(isSelected ? PixelTheme.gbDark.opacity(0.3) : PixelTheme.cardBackground)
+            .pixelOutline()
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -54,5 +78,5 @@ struct OnboardingGoalsStep: View {
     OnboardingGoalsStep(
         selectedGoals: .constant([.buildMuscle])
     ) {}
-    .background(Theme.background)
+    .background(PixelTheme.background)
 }

@@ -1,371 +1,625 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Home Tab (Pixel Art Style)
+
 struct HomeTab: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Bindable var player: Player
 
+    // Sheet states
     @State private var showQuickWorkout = false
     @State private var showCustomWorkout = false
-    @State private var showLevelUp = false
-    @State private var newLevel = 0
-    @State private var showRankUp = false
-    @State private var newRank: PlayerRank = .bronze
-    @State private var currentQuote: String = QuoteManager.randomQuote()
+    @State private var showPetLevelUp = false
+    @State private var petNewLevel = 0
     @State private var showPetDetail = false
     @State private var showTreatSheet = false
-    @State private var showLevelUpConfirm = false
+
+    // Pet interaction states
+    @State private var showHeartParticles = false
+    @State private var showPlaySessionComplete = false
+    @State private var playSessionsRemaining = 0
+
+    // Evolution state
+    @State private var showEvolution = false
+    @State private var evolutionStage: EvolutionStage = .baby
+
+    // Dialogue state
+    @State private var showDialogue = false
+    @State private var dialogueText: String?
+    @State private var idleDialogueTimer: Timer?
+
+    // Motivational quote
+    @State private var currentQuote: String = QuoteManager.randomQuote()
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Character Section
-                    characterSection
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: PixelScale.px(3)) {
+                // Status bar (top)
+                PixelStatusBar(
+                    essence: player.essenceCurrency,
+                    streak: player.currentStreak
+                )
+                .padding(.horizontal, PixelScale.px(2))
+                .padding(.top, PixelScale.px(2))
 
-                    // Pet Display Card
-                    if let pet = player.pet {
-                        PetDisplayCard(
-                            pet: pet,
-                            player: player,
-                            onTap: { showPetDetail = true },
-                            onFeedTreat: { showTreatSheet = true },
-                            onLevelUp: { showLevelUpConfirm = true }
-                        )
-                    }
+                // Pet display area (center) - the main focus
+                petDisplaySection
+                    .padding(.vertical, PixelScale.px(2))
 
-                    // Combined Stats & Streak Section
-                    combinedStatsSection
-
-                    // Action Buttons
-                    actionButtons
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 20)
-            }
-            .background(Theme.background)
-            .navigationTitle("FitQuest")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.background, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .sheet(isPresented: $showQuickWorkout) {
-                QuickWorkoutSheet(player: player, onComplete: handleWorkoutComplete)
-            }
-            .sheet(isPresented: $showCustomWorkout) {
-                CustomWorkoutSheet(player: player, onComplete: handleWorkoutComplete)
-            }
-            .fullScreenCover(isPresented: $showLevelUp) {
-                LevelUpView(level: newLevel) {
-                    showLevelUp = false
-                    // Check if rank also changed after level-up dismiss
-                    if showRankUp {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            showRankUp = true
-                        }
-                    }
-                }
-            }
-            .fullScreenCover(isPresented: $showRankUp) {
-                RankUpView(rank: newRank) {
-                    showRankUp = false
-                }
-            }
-            .sheet(isPresented: $showPetDetail) {
+                // Pet Stats Section
                 if let pet = player.pet {
-                    PetDetailView(pet: pet, player: player)
+                    xpProgressSection(pet: pet)
+                        .padding(.horizontal, PixelScale.px(2))
                 }
-            }
-            .sheet(isPresented: $showTreatSheet) {
-                if let pet = player.pet {
-                    TreatSelectionSheet(pet: pet, player: player)
-                }
-            }
-            .alert("Level Up Pet?", isPresented: $showLevelUpConfirm) {
-                Button("Cancel", role: .cancel) { }
-                Button("Level Up") {
-                    if let pet = player.pet {
-                        let success = PetManager.levelUpPet(pet: pet, player: player)
-                        if success {
-                            try? modelContext.save()
-                        }
-                    }
-                }
-            } message: {
-                if let pet = player.pet {
-                    Text("Level up \(pet.name) to Level \(pet.level + 1) for \(PetManager.levelUpCost(currentLevel: pet.level)) Essence?")
-                }
-            }
-            .onAppear {
-                currentQuote = QuoteManager.randomQuote()
-                player.resetWeeklyWorkoutsIfNeeded()
 
-                // Apply passive pet happiness decay
+                // Action buttons row
+                actionButtonsRow
+                    .padding(.horizontal, PixelScale.px(2))
+
+                // Daily quests panel
+                if !player.dailyQuests.isEmpty {
+                    questsSection
+                        .padding(.horizontal, PixelScale.px(2))
+                }
+
+                // Quote of the day - moved to bottom as a nice footer
+                quoteSection
+                    .padding(.horizontal, PixelScale.px(2))
+                    .padding(.bottom, PixelScale.px(2))
+            }
+        }
+        .background(PixelTheme.background)
+        .sheet(isPresented: $showQuickWorkout) {
+            QuickWorkoutSheet(player: player, onComplete: handleWorkoutComplete)
+        }
+        .sheet(isPresented: $showCustomWorkout) {
+            CustomWorkoutSheet(player: player, onComplete: handleWorkoutComplete)
+        }
+        .fullScreenCover(isPresented: $showPetLevelUp) {
+            if let pet = player.pet {
+                PixelLevelUpView(
+                    petName: pet.name,
+                    species: pet.species,
+                    level: petNewLevel
+                ) {
+                    showPetLevelUp = false
+                }
+            }
+        }
+        .sheet(isPresented: $showPetDetail) {
+            if let pet = player.pet {
+                PetDetailView(pet: pet, player: player)
+            }
+        }
+        .sheet(isPresented: $showTreatSheet) {
+            if let pet = player.pet {
+                TreatSelectionSheet(pet: pet, player: player) {
+                    checkPetCareQuest()
+                    checkQuestProgress()
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showEvolution) {
+            if let pet = player.pet {
+                PixelEvolutionView(
+                    petName: pet.name,
+                    species: pet.species,
+                    newStage: evolutionStage
+                ) {
+                    showEvolution = false
+                }
+            }
+        }
+        .onAppear {
+            currentQuote = QuoteManager.randomQuote()
+            player.resetWeeklyWorkoutsIfNeeded()
+            refreshDailyQuestsIfNeeded()
+
+            if let pet = player.pet {
+                PetManager.applyPassiveDecay(pet: pet)
+                PetManager.resetPlaySessionsIfNeeded(pet: pet)
+
+                if player.notificationsEnabled {
+                    NotificationManager.shared.schedulePetNotifications(for: pet)
+                }
+
+                try? modelContext.save()
+                showGreetingDialogue(pet: pet)
+                startIdleDialogueTimer(pet: pet)
+                checkQuestProgress()
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
                 if let pet = player.pet {
                     PetManager.applyPassiveDecay(pet: pet)
+                    PetManager.resetPlaySessionsIfNeeded(pet: pet)
 
-                    // Schedule pet notifications based on current happiness
                     if player.notificationsEnabled {
                         NotificationManager.shared.schedulePetNotifications(for: pet)
                     }
 
                     try? modelContext.save()
+                    showGreetingDialogue(pet: pet)
+                }
+            } else if newPhase == .inactive || newPhase == .background {
+                stopIdleDialogueTimer()
+            }
+        }
+        .onDisappear {
+            stopIdleDialogueTimer()
+        }
+    }
+
+    // MARK: - Pet Display Section
+
+    private var petDisplaySection: some View {
+        ZStack {
+            if let pet = player.pet {
+                VStack(spacing: PixelScale.px(2)) {
+                    // Dialogue bubble (above pet)
+                    if showDialogue, let text = dialogueText {
+                        PixelSpeechBubble(text: text, isVisible: $showDialogue)
+                            .transition(.opacity)
+                    }
+
+                    // Pet display
+                    PixelPetDisplay(
+                        pet: pet,
+                        context: .home,
+                        isAnimating: true,
+                        onTap: { handlePetTap(pet: pet) },
+                        onLongPress: { showPetDetail = true }
+                    )
+
+                    // Play hint
+                    if pet.canPlay && !pet.isAway {
+                        PixelLabel("TOUCH TO GIVE PETS! (\(pet.remainingPlaySessions) LEFT)")
+                    }
+                }
+
+                // Play session complete popup
+                if showPlaySessionComplete {
+                    PixelPlaySessionView(
+                        sessionsRemaining: playSessionsRemaining,
+                        isVisible: $showPlaySessionComplete
+                    )
+                }
+            } else {
+                PixelText("NO PET", size: .large, color: PixelTheme.textSecondary)
+            }
+        }
+    }
+
+    // MARK: - Pet Stats Section
+
+    private func petStatsSection(pet: Pet) -> some View {
+        VStack(spacing: PixelScale.px(2)) {
+            // XP Progress
+            VStack(spacing: PixelScale.px(1)) {
+                HStack {
+                    PixelIconView(icon: .star, size: 12, color: PixelTheme.gbLightest)
+                    PixelText("XP", size: .small, color: PixelTheme.text)
+                    Spacer()
+                    PixelText("LV.\(pet.currentLevel + 1)", size: .small, color: PixelTheme.gbLightest)
+                }
+
+                PixelProgressBar(
+                    progress: pet.xpProgress,
+                    segments: 12,
+                    height: PixelScale.px(2)
+                )
+            }
+            .padding(PixelScale.px(2))
+            .background(PixelTheme.cardBackground)
+            .pixelOutline()
+
+            // Happiness (Health) Progress
+            VStack(spacing: PixelScale.px(1)) {
+                HStack {
+                    PixelIconView(icon: .heart, size: 12, color: PixelTheme.gbLightest)
+                    PixelText("HAPPINESS", size: .small, color: PixelTheme.text)
+                    Spacer()
+                    PixelText("\(pet.mood.rawValue.uppercased())", size: .small, color: PixelTheme.gbLightest)
+                }
+
+                PixelProgressBar(
+                    progress: pet.happiness / 100.0,
+                    segments: 10,
+                    height: PixelScale.px(2)
+                )
+            }
+            .padding(PixelScale.px(2))
+            .background(PixelTheme.cardBackground)
+            .pixelOutline()
+
+            // Evolution stage indicator
+            HStack {
+                PixelIconView(icon: .paw, size: 12, color: PixelTheme.gbLightest)
+                PixelText("STAGE", size: .small, color: PixelTheme.text)
+                Spacer()
+                PixelText(pet.evolutionStage.displayName.uppercased(), size: .small, color: PixelTheme.gbLightest)
+            }
+            .padding(PixelScale.px(2))
+            .background(PixelTheme.cardBackground)
+            .pixelOutline()
+        }
+    }
+
+    // Keep for backward compatibility
+    private func xpProgressSection(pet: Pet) -> some View {
+        petStatsSection(pet: pet)
+    }
+
+    // MARK: - Action Buttons Row
+
+    private var actionButtonsRow: some View {
+        VStack(spacing: PixelScale.px(2)) {
+            // Top row: WORK + CUSTOM (workout-related)
+            HStack(spacing: PixelScale.px(2)) {
+                PixelIconButton(icon: .dumbbell, label: "WORK") {
+                    showQuickWorkout = true
+                }
+
+                PixelIconButton(icon: .plus, label: "CUSTOM") {
+                    showCustomWorkout = true
                 }
             }
-            .onChange(of: scenePhase) { _, newPhase in
-                if newPhase == .active {
-                    // Apply passive decay when app becomes active
-                    if let pet = player.pet {
-                        PetManager.applyPassiveDecay(pet: pet)
 
-                        // Re-schedule pet notifications
-                        if player.notificationsEnabled {
-                            NotificationManager.shared.schedulePetNotifications(for: pet)
-                        }
+            // Bottom row: FEED + SHOP (pet-related)
+            HStack(spacing: PixelScale.px(2)) {
+                PixelIconButton(icon: .heart, label: "FEED") {
+                    showTreatSheet = true
+                }
 
-                        try? modelContext.save()
+                PixelIconButton(icon: .star, label: "SHOP") {
+                    showPetDetail = true
+                }
+            }
+        }
+    }
+
+    // MARK: - Quests Section
+
+    private var questsSection: some View {
+        PixelPanelWithCounter(
+            title: "QUESTS",
+            current: player.dailyQuests.filter { $0.isCompleted }.count,
+            total: player.dailyQuests.count
+        ) {
+            VStack(spacing: PixelScale.px(1)) {
+                ForEach(player.dailyQuests.prefix(3)) { quest in
+                    PixelQuestRow(quest: quest) {
+                        claimQuestReward(quest)
                     }
                 }
             }
         }
     }
 
-    private var characterSection: some View {
-        VStack(spacing: 8) {
-            // Motivational quote
-            Text("\"\(currentQuote)\"")
-                .font(.system(size: 13, weight: .medium).italic())
-                .foregroundColor(Theme.textSecondary)
+    // MARK: - Quote Section
+
+    private var quoteSection: some View {
+        VStack(spacing: PixelScale.px(1)) {
+            PixelText("QUOTE OF THE DAY", size: .small, color: PixelTheme.gbLightest)
+            PixelText(currentQuote.uppercased(), size: .small, color: PixelTheme.textSecondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-
-            if let character = player.character {
-                CharacterDisplayView(appearance: character, pet: player.pet, size: 130)
-
-                Text(player.name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
-            }
+                .lineLimit(3)
         }
-        .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(player.character?.background.gradient ?? CharacterBackground.defaultDark.gradient)
-        )
+        .padding(PixelScale.px(2))
+        .background(PixelTheme.cardBackground)
+        .pixelOutline()
     }
 
-    private var combinedStatsSection: some View {
-        VStack(spacing: 12) {
-            // Level and Rank row
-            HStack {
-                HStack(spacing: 6) {
-                    LevelBadge(level: player.currentLevel, size: .medium)
-                    RankBadge(rank: player.currentRank, size: .small)
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text("\(player.xpToNextLevel.formatted()) XP")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundColor(Theme.textSecondary)
-                    Text("to next level")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(Theme.textMuted)
-                }
+    // MARK: - Pet Interaction
+
+    private func handlePetTap(pet: Pet) {
+        let result = PetManager.handlePetTap(pet: pet)
+
+        switch result {
+        case .tapRegistered:
+            if player.soundEffectsEnabled {
+                let impact = UIImpactFeedbackGenerator(style: .light)
+                impact.impactOccurred()
+            }
+            try? modelContext.save()
+
+        case .sessionComplete(let remaining):
+            playSessionsRemaining = remaining
+            showPlaySessionComplete = true
+
+            if player.soundEffectsEnabled {
+                let notification = UINotificationFeedbackGenerator()
+                notification.notificationOccurred(.success)
             }
 
-            // XP Progress
-            XPProgressBar(
-                progress: player.xpProgress,
-                currentXP: player.totalXP - LevelManager.xpRangeFor(level: player.currentLevel).start,
-                targetXP: LevelManager.xpRangeFor(level: player.currentLevel).end - LevelManager.xpRangeFor(level: player.currentLevel).start
-            )
+            checkPlayTimeQuest()
+            checkQuestProgress()
 
-            Divider()
-                .background(Theme.elevated)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                showDialogue(for: pet, context: .playComplete)
+            }
 
-            // Weekly streak section
-            WeeklyStreakBadge(
-                daysWorkedOut: player.daysWorkedOutThisWeek,
-                weeklyGoal: player.weeklyWorkoutGoal,
-                currentStreak: player.currentWeeklyStreak,
-                highestStreak: player.highestWeeklyStreak,
-                compact: true
-            )
-            .padding(-12)
-            .padding(.horizontal, -4)
+            try? modelContext.save()
+
+        case .noSessionsRemaining:
+            break
+
+        case .petIsAway:
+            showPetDetail = true
         }
-        .padding(16)
-        .background(Theme.cardBackground)
-        .cornerRadius(16)
     }
 
-    private var actionButtons: some View {
-        VStack(spacing: 12) {
-            PrimaryButton("Add Quick Workout", icon: "bolt.fill") {
-                showQuickWorkout = true
-            }
+    // MARK: - Dialogue Functions
 
-            SecondaryButton("Add Custom Workout", icon: "plus") {
-                showCustomWorkout = true
+    private func showGreetingDialogue(pet: Pet) {
+        guard !showDialogue else { return }
+
+        if let greeting = DialogueManager.shared.getGreetingDialogue(for: pet) {
+            dialogueText = greeting.uppercased()
+            withAnimation {
+                showDialogue = true
             }
         }
-        .padding(.top, 8)
     }
+
+    private func showDialogue(for pet: Pet, context: DialogueContext) {
+        guard !showDialogue else { return }
+
+        if let text = DialogueManager.shared.getDialogue(for: pet, context: context) {
+            dialogueText = text.uppercased()
+            withAnimation {
+                showDialogue = true
+            }
+        }
+    }
+
+    private func startIdleDialogueTimer(pet: Pet) {
+        stopIdleDialogueTimer()
+
+        idleDialogueTimer = Timer.scheduledTimer(withTimeInterval: Double.random(in: 30...60), repeats: true) { _ in
+            guard !showDialogue, !pet.isAway else { return }
+
+            if DialogueManager.shared.shouldShowIdleDialogue() {
+                if let text = DialogueManager.shared.getDialogue(for: pet, context: .idle) {
+                    DispatchQueue.main.async {
+                        dialogueText = text.uppercased()
+                        withAnimation {
+                            showDialogue = true
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func stopIdleDialogueTimer() {
+        idleDialogueTimer?.invalidate()
+        idleDialogueTimer = nil
+    }
+
+    // MARK: - Quest Management
+
+    private func refreshDailyQuestsIfNeeded() {
+        // Refresh if it's a new day OR if quests are empty (e.g., after data migration)
+        let needsRefresh = QuestManager.shared.shouldRefreshQuests(lastRefresh: player.lastQuestRefresh)
+            || player.dailyQuests.isEmpty
+
+        if needsRefresh {
+            // Clear old quests
+            for quest in player.dailyQuests {
+                modelContext.delete(quest)
+            }
+            player.dailyQuests.removeAll()
+
+            // Generate and store new quests
+            let newQuests = QuestManager.shared.generateDailyQuests()
+            for quest in newQuests {
+                player.dailyQuests.append(quest)
+                modelContext.insert(quest)
+            }
+            player.lastQuestRefresh = Date()
+            try? modelContext.save()
+        }
+    }
+
+    private func checkQuestProgress(workout: Workout? = nil) {
+        for quest in player.dailyQuests {
+            _ = QuestManager.shared.checkQuestCompletion(
+                quest: quest,
+                player: player,
+                workout: workout
+            )
+        }
+
+        if let pet = player.pet {
+            for quest in player.dailyQuests where quest.questType == .happyPet {
+                _ = QuestManager.shared.checkHappyPetQuest(quest: quest, pet: pet)
+            }
+        }
+    }
+
+    private func checkPetCareQuest() {
+        for quest in player.dailyQuests where quest.questType == .petCare {
+            _ = QuestManager.shared.checkPetCareQuest(quest: quest)
+        }
+    }
+
+    private func checkPlayTimeQuest() {
+        for quest in player.dailyQuests where quest.questType == .playTime {
+            _ = QuestManager.shared.checkPlayTimeQuest(quest: quest)
+        }
+    }
+
+    private func claimQuestReward(_ quest: DailyQuest) {
+        QuestManager.shared.claimReward(quest: quest, player: player, pet: player.pet)
+
+        if player.soundEffectsEnabled {
+            SoundManager.shared.playSuccessHaptic()
+        }
+
+        try? modelContext.save()
+    }
+
+    // MARK: - Workout Complete Handler
 
     private func handleWorkoutComplete(_ workout: Workout) {
-        let previousLevel = player.currentLevel
-        let previousRank = player.currentRank
-
-        // Capture state before updating lastWorkoutDate
         let isFirstWorkoutOfDay = player.isFirstWorkoutOfDay
 
-        // Update streaks (daily and weekly)
         player.updateStreak()
         player.updateWeeklyStreak(isFirstWorkout: isFirstWorkoutOfDay)
 
-        // Update pet happiness (if pet exists and not away)
-        if let pet = player.pet {
-            PetManager.onWorkoutComplete(pet: pet)
-        }
-
-        // Add workout
         workout.player = player
         player.workouts.append(workout)
         modelContext.insert(workout)
 
-        // Add XP
-        player.addXP(workout.xpEarned)
+        if let pet = player.pet {
+            let previousLevel = pet.currentLevel
+            let previousStage = pet.evolutionStage
 
-        // Award essence (1 essence per 10 XP, always earned even if pet is away)
+            pet.totalXP += workout.xpEarned
+
+            if pet.evolutionStage != previousStage {
+                evolutionStage = pet.evolutionStage
+                if player.soundEffectsEnabled {
+                    SoundManager.shared.playLevelUp()
+                }
+                showEvolution = true
+            } else if pet.currentLevel > previousLevel {
+                petNewLevel = pet.currentLevel
+                if player.soundEffectsEnabled {
+                    SoundManager.shared.playLevelUp()
+                }
+                showPetLevelUp = true
+            }
+
+            PetManager.onWorkoutComplete(pet: pet)
+
+            if !showPetLevelUp && !showEvolution {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showDialogue(for: pet, context: .workoutComplete)
+                }
+            }
+        }
+
         let essenceEarned = PetManager.essenceEarnedForWorkout(xp: workout.xpEarned)
         player.essenceCurrency += essenceEarned
 
-        // Cancel pet notifications (happiness restored by workout)
+        checkQuestProgress(workout: workout)
+
         if player.notificationsEnabled {
             NotificationManager.shared.cancelTodayPetNotifications()
         }
 
-        // Play sound effects if enabled
         if player.soundEffectsEnabled {
             SoundManager.shared.playXPGain()
             SoundManager.shared.playSuccessHaptic()
-        }
-
-        // Check for level up
-        let didLevelUp = player.currentLevel > previousLevel
-        if didLevelUp {
-            newLevel = player.currentLevel
-            if player.soundEffectsEnabled {
-                SoundManager.shared.playLevelUp()
-            }
-            showLevelUp = true
-        }
-
-        // Check for rank up (after level up so we can sequence the celebrations)
-        let didRankUp = player.currentRank != previousRank
-        if didRankUp {
-            newRank = player.currentRank
-            if player.soundEffectsEnabled {
-                SoundManager.shared.playRankUp()
-            }
-            // If also leveled up, rank-up will show after level-up dismisses
-            if !didLevelUp {
-                showRankUp = true
-            }
         }
 
         try? modelContext.save()
     }
 }
 
-// MARK: - Level Up Celebration View
+// MARK: - Pixel Level Up View
 
-struct LevelUpView: View {
+struct PixelLevelUpView: View {
+    let petName: String
+    let species: PetSpecies
     let level: Int
     let onDismiss: () -> Void
 
-    @State private var scale: CGFloat = 0.5
-    @State private var opacity: Double = 0
-
     var body: some View {
         ZStack {
-            Theme.background.opacity(0.95)
+            PixelTheme.background
                 .ignoresSafeArea()
 
-            VStack(spacing: 30) {
+            VStack(spacing: PixelScale.px(4)) {
                 Spacer()
 
-                // Star burst effect
-                ZStack {
-                    ForEach(0..<8) { index in
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Theme.warning.opacity(0.6))
-                            .offset(y: -80)
-                            .rotationEffect(.degrees(Double(index) * 45))
-                    }
+                // Pet sprite (large)
+                PixelSpriteView(
+                    sprite: PetSpriteLibrary.sprite(for: species, stage: EvolutionStage.from(level: level)),
+                    pixelSize: 8
+                )
 
-                    Circle()
-                        .fill(Theme.primaryGradient)
-                        .frame(width: 120, height: 120)
+                PixelText("LEVEL UP!", size: .xlarge)
 
-                    Text("\(level)")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                }
-                .scaleEffect(scale)
+                PixelText("\(petName) REACHED LV.\(level)!", size: .medium, color: PixelTheme.textSecondary)
 
-                VStack(spacing: 8) {
-                    Text("LEVEL UP!")
-                        .font(.system(size: 32, weight: .heavy, design: .rounded))
-                        .foregroundColor(Theme.warning)
-
-                    Text("You reached Level \(level)")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-
-                    if LevelManager.isMilestone(level: level) {
-                        Text("Milestone reached! New items unlocked")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Theme.secondary)
-                            .padding(.top, 8)
-                    }
-                }
+                PixelText("+\(species.baseBonus) \(species.bonusType.uppercased()) BONUS", size: .small, color: PixelTheme.textSecondary)
 
                 Spacer()
 
-                PrimaryButton("Continue") {
+                PixelButton("CONTINUE", style: .primary) {
                     onDismiss()
                 }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 40)
-            }
-            .opacity(opacity)
-        }
-        .onAppear {
-            withAnimation(.spring(duration: 0.6)) {
-                scale = 1.0
-                opacity = 1.0
+                .padding(.horizontal, PixelScale.px(10))
+                .padding(.bottom, PixelScale.px(10))
             }
         }
     }
 }
 
+// MARK: - Pixel Evolution View
+
+struct PixelEvolutionView: View {
+    let petName: String
+    let species: PetSpecies
+    let newStage: EvolutionStage
+    let onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            PixelTheme.background
+                .ignoresSafeArea()
+
+            VStack(spacing: PixelScale.px(4)) {
+                Spacer()
+
+                // Pet sprite (large)
+                PixelSpriteView(
+                    sprite: PetSpriteLibrary.sprite(for: species, stage: newStage),
+                    pixelSize: 10
+                )
+
+                PixelText("EVOLUTION!", size: .xlarge)
+
+                PixelText("\(petName) EVOLVED TO \(newStage.displayName.uppercased())!", size: .medium, color: PixelTheme.textSecondary)
+
+                PixelText(newStage.description.uppercased(), size: .small, color: PixelTheme.textSecondary)
+
+                Spacer()
+
+                PixelButton("AMAZING!", style: .primary) {
+                    onDismiss()
+                }
+                .padding(.horizontal, PixelScale.px(10))
+                .padding(.bottom, PixelScale.px(10))
+            }
+        }
+    }
+}
+
+// MARK: - Preview
+
 #Preview {
     HomeTab(player: {
         let p = Player(name: "Test")
-        p.totalXP = 2450
         p.currentStreak = 7
         p.highestStreak = 14
         p.weeklyWorkoutGoal = 4
         p.daysWorkedOutThisWeek = 2
         p.currentWeeklyStreak = 3
         p.highestWeeklyStreak = 8
-        p.character = CharacterAppearance()
+        p.essenceCurrency = 150
+        let pet = Pet(name: "Ember", species: .dragon)
+        pet.totalXP = 500
+        pet.happiness = 85
+        p.pet = pet
         return p
     }())
-    .modelContainer(for: [Player.self, Workout.self, WorkoutTemplate.self, CharacterAppearance.self], inMemory: true)
+    .modelContainer(for: [Player.self, Workout.self, WorkoutTemplate.self, Pet.self, DailyQuest.self], inMemory: true)
 }

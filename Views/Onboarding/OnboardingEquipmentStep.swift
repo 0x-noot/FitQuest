@@ -6,27 +6,21 @@ struct OnboardingEquipmentStep: View {
     let onSkip: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: PixelScale.px(4)) {
             // Header
-            VStack(spacing: 8) {
-                Text("What equipment do you have?")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
-
-                Text("Select all that apply (optional)")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+            VStack(spacing: PixelScale.px(1)) {
+                PixelText("EQUIPMENT?", size: .xlarge)
+                PixelText("SELECT ALL (OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
             }
-            .padding(.top, 8)
+            .padding(.top, PixelScale.px(2))
 
             // Equipment options
             ScrollView {
-                VStack(spacing: 10) {
+                VStack(spacing: PixelScale.px(2)) {
                     ForEach(EquipmentAccess.allCases) { equipment in
-                        MultiSelectCard(
-                            title: equipment.displayName,
-                            description: equipment.description,
-                            iconName: equipment.iconName,
+                        PixelMultiSelectCard(
+                            title: equipment.displayName.uppercased(),
+                            description: equipment.description.uppercased(),
                             isSelected: selectedEquipment.contains(equipment)
                         ) {
                             if selectedEquipment.contains(equipment) {
@@ -37,23 +31,22 @@ struct OnboardingEquipmentStep: View {
                         }
                     }
                 }
+                .padding(.horizontal, PixelScale.px(4))
             }
 
             // Buttons
-            VStack(spacing: 12) {
-                PrimaryButton("Continue", icon: "arrow.right") {
+            VStack(spacing: PixelScale.px(2)) {
+                PixelButton("CONTINUE >", style: .primary) {
                     onContinue()
                 }
 
                 Button(action: onSkip) {
-                    Text("Skip for now")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
+                    PixelText("SKIP FOR NOW", size: .small, color: PixelTheme.textSecondary)
                 }
             }
+            .padding(.horizontal, PixelScale.px(4))
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.vertical, PixelScale.px(4))
     }
 }
 
@@ -61,5 +54,5 @@ struct OnboardingEquipmentStep: View {
     OnboardingEquipmentStep(
         selectedEquipment: .constant([.fullGym])
     ) {} onSkip: {}
-    .background(Theme.background)
+    .background(PixelTheme.background)
 }

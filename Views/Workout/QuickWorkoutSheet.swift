@@ -1,6 +1,8 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Quick Workout Sheet (Pixel Art Style)
+
 struct QuickWorkoutSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -17,117 +19,131 @@ struct QuickWorkoutSheet: View {
         defaultTemplates.filter { $0.workoutType == .cardio }
     }
 
-    // Strength templates by muscle group
-    private func strengthTemplates(for muscleGroup: MuscleGroup) -> [WorkoutTemplate] {
-        defaultTemplates.filter { $0.workoutType == .strength && $0.muscleGroup == muscleGroup }
+    // Strength templates
+    private var strengthTemplates: [WorkoutTemplate] {
+        defaultTemplates.filter { $0.workoutType == .strength }
     }
 
-    // Muscle groups to display (in order)
-    private let muscleGroupOrder: [MuscleGroup] = [.chest, .back, .shoulders, .biceps, .triceps, .legs, .core]
-
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Cardio section
-                    workoutSection(title: "Cardio", templates: cardioTemplates, accentColor: Theme.secondary)
+        VStack(spacing: 0) {
+            // Title bar
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    PixelText("X", size: .medium)
+                }
 
-                    // Strength sections by muscle group
-                    ForEach(muscleGroupOrder) { muscleGroup in
-                        let templates = strengthTemplates(for: muscleGroup)
-                        if !templates.isEmpty {
-                            workoutSection(title: muscleGroup.displayName, templates: templates, accentColor: Theme.primary)
+                Spacer()
+
+                PixelText("ADD WORKOUT", size: .large)
+
+                Spacer()
+
+                // Spacer for balance
+                PixelText(" ", size: .medium)
+            }
+            .padding(PixelScale.px(2))
+            .background(PixelTheme.gbDark)
+
+            // Content
+            ScrollView {
+                VStack(spacing: PixelScale.px(3)) {
+                    // Cardio section
+                    if !cardioTemplates.isEmpty {
+                        PixelPanel(title: "CARDIO") {
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: PixelScale.px(2)) {
+                                ForEach(cardioTemplates) { template in
+                                    PixelWorkoutButton(template: template) {
+                                        selectedTemplate = template
+                                    }
+                                }
+                            }
                         }
                     }
 
-                    // Custom workouts section
+                    // Strength section
+                    if !strengthTemplates.isEmpty {
+                        PixelPanel(title: "STRENGTH") {
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: PixelScale.px(2)) {
+                                ForEach(strengthTemplates) { template in
+                                    PixelWorkoutButton(template: template) {
+                                        selectedTemplate = template
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Custom workouts
                     if !customTemplates.isEmpty {
-                        workoutSection(title: "My Workouts", templates: customTemplates, accentColor: Theme.warning)
+                        PixelPanel(title: "CUSTOM") {
+                            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: PixelScale.px(2)) {
+                                ForEach(customTemplates) { template in
+                                    PixelWorkoutButton(template: template) {
+                                        selectedTemplate = template
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
-                .padding(20)
-                .padding(.bottom, 20)
-            }
-            .background(Theme.background)
-            .navigationTitle("Quick Workout")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.cardBackground, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(Theme.textSecondary)
-                }
-            }
-            .sheet(item: $selectedTemplate) { template in
-                WorkoutInputSheet(
-                    template: template,
-                    player: player,
-                    onComplete: { workout in
-                        onComplete(workout)
-                        dismiss()
-                    }
-                )
+                .padding(PixelScale.px(2))
             }
         }
-    }
-
-    private func workoutSection(title: String, templates: [WorkoutTemplate], accentColor: Color) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title.uppercased())
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Theme.textMuted)
-                .tracking(1)
-
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12),
-                GridItem(.flexible(), spacing: 12)
-            ], spacing: 12) {
-                ForEach(templates) { template in
-                    WorkoutTemplateButton(template: template, accentColor: accentColor) {
-                        selectedTemplate = template
-                    }
+        .background(PixelTheme.background)
+        .sheet(item: $selectedTemplate) { template in
+            WorkoutInputSheet(
+                template: template,
+                player: player,
+                onComplete: { workout in
+                    onComplete(workout)
+                    dismiss()
                 }
-            }
+            )
         }
     }
 }
 
-struct WorkoutTemplateButton: View {
+// MARK: - Pixel Workout Button
+
+struct PixelWorkoutButton: View {
     let template: WorkoutTemplate
-    var accentColor: Color = Theme.primary
     let action: () -> Void
+
+    @State private var isPressed = false
+
+    private var icon: PixelIcon {
+        template.workoutType == .cardio ? .run : .dumbbell
+    }
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: template.iconName)
-                    .font(.system(size: 24))
-                    .foregroundColor(accentColor)
+            VStack(spacing: PixelScale.px(1)) {
+                PixelIconView(icon: icon, size: 20, color: PixelTheme.gbLightest)
 
-                Text(template.name)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Theme.textPrimary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
+                PixelText(
+                    template.name.uppercased(),
+                    size: .small,
+                    color: PixelTheme.text
+                )
+                .lineLimit(2)
+                .minimumScaleFactor(0.7)
+                .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
-            .frame(minHeight: 80)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 4)
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(Theme.elevated, lineWidth: 1)
-            )
+            .frame(minHeight: PixelScale.px(14))
+            .padding(.vertical, PixelScale.px(2))
+            .padding(.horizontal, PixelScale.px(1))
+            .background(isPressed ? PixelTheme.gbDark : PixelTheme.cardBackground)
+            .pixelOutline()
+            .offset(y: isPressed ? PixelScale.px(1) : 0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PixelPressStyle(isPressed: $isPressed))
     }
 }
+
+// MARK: - Preview
 
 #Preview {
     QuickWorkoutSheet(

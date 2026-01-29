@@ -5,7 +5,6 @@ import Foundation
 final class Player {
     var id: UUID
     var name: String
-    var totalXP: Int
     var currentStreak: Int
     var highestStreak: Int
     var lastWorkoutDate: Date?
@@ -38,33 +37,38 @@ final class Player {
     @Relationship(deleteRule: .cascade, inverse: \Workout.player)
     var workouts: [Workout] = []
 
-    @Relationship(deleteRule: .cascade, inverse: \CharacterAppearance.player)
-    var character: CharacterAppearance?
-
-    // Pet system
+    // Pet system - now the central focus
     var essenceCurrency: Int
     @Relationship(deleteRule: .cascade, inverse: \Pet.player)
     var pet: Pet?
 
-    // Computed properties
-    var currentLevel: Int {
-        LevelManager.levelFor(xp: totalXP)
+    // Daily quests system
+    var lastQuestRefresh: Date?
+    @Relationship(deleteRule: .cascade)
+    var dailyQuests: [DailyQuest] = []
+
+    // Accessory system
+    var unlockedAccessoriesRaw: String  // Comma-separated accessory IDs
+
+    var unlockedAccessories: [String] {
+        get {
+            guard !unlockedAccessoriesRaw.isEmpty else { return [] }
+            return unlockedAccessoriesRaw.split(separator: ",").map { String($0) }
+        }
+        set {
+            unlockedAccessoriesRaw = newValue.joined(separator: ",")
+        }
     }
 
-    var xpForCurrentLevel: Int {
-        LevelManager.xpRangeFor(level: currentLevel).start
+    func hasUnlocked(_ accessory: Accessory) -> Bool {
+        unlockedAccessories.contains(accessory.id)
     }
 
-    var xpForNextLevel: Int {
-        LevelManager.xpRangeFor(level: currentLevel).end
-    }
-
-    var xpProgress: Double {
-        LevelManager.progressFor(xp: totalXP)
-    }
-
-    var xpToNextLevel: Int {
-        LevelManager.xpToNextLevel(currentXP: totalXP)
+    func unlockAccessory(_ accessory: Accessory) {
+        guard !hasUnlocked(accessory) else { return }
+        var unlocked = unlockedAccessories
+        unlocked.append(accessory.id)
+        unlockedAccessories = unlocked
     }
 
     var isFirstWorkoutOfDay: Bool {
@@ -73,11 +77,6 @@ final class Player {
 
     var streakMultiplier: Double {
         XPCalculator.streakMultiplier(streak: currentStreak)
-    }
-
-    // Rank
-    var currentRank: PlayerRank {
-        PlayerRank.rank(for: currentLevel)
     }
 
     // Weekly stats
@@ -159,7 +158,6 @@ final class Player {
     init(name: String = "Player") {
         self.id = UUID()
         self.name = name
-        self.totalXP = 0
         self.currentStreak = 0
         self.highestStreak = 0
         self.createdAt = Date()
@@ -186,14 +184,12 @@ final class Player {
 
         // Pet system defaults
         self.essenceCurrency = 0
-    }
 
-    /// Add XP and return if leveled up
-    @discardableResult
-    func addXP(_ amount: Int) -> Bool {
-        let previousLevel = currentLevel
-        totalXP += amount
-        return currentLevel > previousLevel
+        // Daily quests defaults
+        self.lastQuestRefresh = nil
+
+        // Accessory system defaults
+        self.unlockedAccessoriesRaw = ""
     }
 
     /// Update streak after completing a workout
@@ -306,7 +302,7 @@ final class Player {
         workouts.filter { StreakManager.isSameDay($0.completedAt, Date()) }
     }
 
-    /// Get total XP earned today
+    /// Get total XP earned today (pet's XP from today's workouts)
     var todaysXP: Int {
         todaysWorkouts.reduce(0) { $0 + $1.xpEarned }
     }

@@ -4,7 +4,7 @@ import UserNotifications
 import UIKit
 
 @main
-struct FitQuestApp: App {
+struct FitogatchiApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var sharedModelContainer: ModelContainer = {
@@ -12,8 +12,8 @@ struct FitQuestApp: App {
             Player.self,
             Workout.self,
             WorkoutTemplate.self,
-            CharacterAppearance.self,
-            Pet.self
+            Pet.self,
+            DailyQuest.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

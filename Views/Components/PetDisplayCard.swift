@@ -5,11 +5,6 @@ struct PetDisplayCard: View {
     let player: Player
     let onTap: () -> Void
     let onFeedTreat: () -> Void
-    let onLevelUp: () -> Void
-
-    var canLevelUp: Bool {
-        PetManager.canLevelUp(pet: pet, player: player)
-    }
 
     var body: some View {
         Button(action: onTap) {
@@ -40,13 +35,17 @@ struct PetDisplayCard: View {
                                 .foregroundColor(Theme.textPrimary)
 
                             if !pet.isAway {
-                                Text("Lv\(pet.level)")
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .foregroundColor(Theme.primary)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Theme.primary.opacity(0.2))
-                                    .cornerRadius(6)
+                                HStack(spacing: 2) {
+                                    Image(systemName: "sparkles")
+                                        .font(.system(size: 10))
+                                    Text("Lv\(pet.currentLevel)")
+                                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                                }
+                                .foregroundColor(Theme.primary)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Theme.primary.opacity(0.2))
+                                .cornerRadius(6)
                             }
                         }
 
@@ -71,7 +70,7 @@ struct PetDisplayCard: View {
                         .foregroundColor(Theme.textMuted)
                 }
 
-                // Quick action buttons (only if pet is active)
+                // Quick action button (only if pet is active)
                 if !pet.isAway {
                     HStack(spacing: 8) {
                         // Feed treat button
@@ -81,7 +80,7 @@ struct PetDisplayCard: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "heart.fill")
                                     .font(.system(size: 12))
-                                Text("Feed")
+                                Text("Feed Treat")
                                     .font(.system(size: 13, weight: .semibold))
                             }
                             .foregroundColor(player.essenceCurrency >= 10 ? .white : Theme.textMuted)
@@ -93,24 +92,25 @@ struct PetDisplayCard: View {
                         .disabled(player.essenceCurrency < 10)
                         .buttonStyle(.plain)
 
-                        // Level up button
-                        Button {
-                            onLevelUp()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.up.circle.fill")
-                                    .font(.system(size: 12))
-                                Text("Level \(pet.levelUpCost) ✨")
-                                    .font(.system(size: 13, weight: .semibold))
+                        // XP Progress indicator
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(Int(pet.xpProgress * 100))% to Lv\(pet.currentLevel + 1)")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(Theme.textSecondary)
+
+                            // Mini progress bar
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Theme.elevated)
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Theme.primary)
+                                        .frame(width: geo.size.width * pet.xpProgress)
+                                }
                             }
-                            .foregroundColor(canLevelUp ? .white : Theme.textMuted)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(canLevelUp ? Theme.success : Theme.elevated)
-                            .cornerRadius(8)
+                            .frame(height: 4)
                         }
-                        .disabled(!canLevelUp)
-                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity)
                     }
                 }
             }
@@ -149,9 +149,9 @@ struct HappinessBar: View {
         // Active happy pet
         PetDisplayCard(
             pet: {
-                let pet = Pet(name: "Fluffy", species: .fox)
+                let pet = Pet(name: "Fluffy", species: .cat)
                 pet.happiness = 95
-                pet.level = 5
+                pet.totalXP = 500
                 return pet
             }(),
             player: {
@@ -160,8 +160,7 @@ struct HappinessBar: View {
                 return player
             }(),
             onTap: {},
-            onFeedTreat: {},
-            onLevelUp: {}
+            onFeedTreat: {}
         )
 
         // Sad pet
@@ -169,7 +168,7 @@ struct HappinessBar: View {
             pet: {
                 let pet = Pet(name: "Spike", species: .dragon)
                 pet.happiness = 25
-                pet.level = 1
+                pet.totalXP = 100
                 return pet
             }(),
             player: {
@@ -178,21 +177,19 @@ struct HappinessBar: View {
                 return player
             }(),
             onTap: {},
-            onFeedTreat: {},
-            onLevelUp: {}
+            onFeedTreat: {}
         )
 
         // Away pet
         PetDisplayCard(
             pet: {
-                let pet = Pet(name: "Shelly", species: .turtle)
+                let pet = Pet(name: "Shelly", species: .plant)
                 pet.isAway = true
                 return pet
             }(),
             player: Player(),
             onTap: {},
-            onFeedTreat: {},
-            onLevelUp: {}
+            onFeedTreat: {}
         )
     }
     .padding()

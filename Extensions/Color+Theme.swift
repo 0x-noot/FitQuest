@@ -26,42 +26,47 @@ extension Color {
     }
 }
 
+// MARK: - Theme (Game Boy Pixel Art Style)
+// All colors now use the authentic Game Boy DMG-01 4-shade green palette
+
 struct Theme {
-    // Backgrounds
-    static let background = Color(hex: "0D0D0F")
-    static let cardBackground = Color(hex: "1A1A1F")
-    static let elevated = Color(hex: "252530")
+    // MARK: - Backgrounds (Game Boy Green)
+    static let background = PixelTheme.background
+    static let cardBackground = PixelTheme.cardBackground
+    static let elevated = PixelTheme.elevated
 
-    // Accents
-    static let primary = Color(hex: "8B5CF6")
-    static let secondary = Color(hex: "22D3EE")
-    static let success = Color(hex: "22C55E")
-    static let warning = Color(hex: "F59E0B")
-    static let streak = Color(hex: "F97316")
+    // MARK: - Accents (Mapped to Game Boy shades)
+    // In the Game Boy palette, we use different shades for emphasis
+    static let primary = PixelTheme.gbDarkest      // Primary actions
+    static let secondary = PixelTheme.gbDark       // Secondary actions
+    static let success = PixelTheme.gbDarkest      // Success states
+    static let warning = PixelTheme.gbDark         // Warning states
+    static let streak = PixelTheme.gbDarkest       // Streak indicators
 
-    // Text
-    static let textPrimary = Color.white
-    static let textSecondary = Color(hex: "9CA3AF")
-    static let textMuted = Color(hex: "6B7280")
+    // MARK: - Text
+    static let textPrimary = PixelTheme.text
+    static let textSecondary = PixelTheme.textSecondary
+    static let textMuted = PixelTheme.gbDark
 
-    // XP Bar
-    static let xpBarBackground = Color(hex: "374151")
+    // MARK: - XP Bar
+    static let xpBarBackground = PixelTheme.gbLight
 
-    // Gradients
+    // MARK: - Gradients (Solid colors in pixel art style)
+    // Game Boy doesn't have gradients, so we use solid fills
     static let primaryGradient = LinearGradient(
-        colors: [Color(hex: "8B5CF6"), Color(hex: "6366F1")],
+        colors: [PixelTheme.gbDarkest, PixelTheme.gbDarkest],
         startPoint: .leading,
         endPoint: .trailing
     )
 
     static let xpBarGradient = LinearGradient(
-        colors: [Color(hex: "8B5CF6"), Color(hex: "EC4899")],
+        colors: [PixelTheme.gbDarkest, PixelTheme.gbDarkest],
         startPoint: .leading,
         endPoint: .trailing
     )
 
     static let streakGradient = LinearGradient(
-        colors: [Color(hex: "F97316"), Color(hex: "EF4444")],
+        colors: [PixelTheme.gbDarkest, PixelTheme.gbDarkest],
         startPoint: .top,
         endPoint: .bottom
     )

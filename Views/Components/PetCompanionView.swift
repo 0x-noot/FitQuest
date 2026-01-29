@@ -7,33 +7,84 @@ struct PetCompanionView: View {
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            // Pet icon
+            // Pet icon with mood-based animations
             ZStack {
-                // Background circle
-                Circle()
-                    .fill(pet.mood.color.opacity(0.2))
-                    .frame(width: size * 0.8, height: size * 0.8)
+                // Evolution aura (for teen and adult stages)
+                if pet.evolutionStage.glowIntensity > 0 && !pet.isAway {
+                    Circle()
+                        .fill(pet.evolutionStage.auraColor)
+                        .frame(width: size * 0.9, height: size * 0.9)
+                        .blur(radius: 10)
+                }
 
-                // Pet icon
-                Image(systemName: pet.species.iconName)
-                    .font(.system(size: size * 0.4))
+                // Background circle - with accessory background if equipped
+                if let bgAccessory = pet.equippedBackground, let gradient = bgAccessory.backgroundGradient {
+                    Circle()
+                        .fill(gradient)
+                        .frame(width: size * 0.8, height: size * 0.8)
+                } else {
+                    Circle()
+                        .fill(pet.mood.color.opacity(0.2))
+                        .frame(width: size * 0.8, height: size * 0.8)
+                }
+
+                // Pet icon with mood animations - uses evolution-based icon and scale
+                Image(systemName: pet.evolutionIconName)
+                    .font(.system(size: size * 0.4 * pet.evolutionStage.iconScale))
                     .foregroundColor(pet.isAway ? Theme.textMuted.opacity(0.5) : pet.mood.color)
-            }
-            .scaleEffect(breatheAnimation ? 1.02 : 1.0)
-            .animation(
-                .easeInOut(duration: 2.0).repeatForever(autoreverses: true),
-                value: breatheAnimation
-            )
-            .opacity(pet.isAway ? 0.5 : 1.0)
+                    .animatedPet(mood: pet.mood, isAway: pet.isAway)
+                    .moodScale(mood: pet.mood, isAway: pet.isAway)
 
-            // Level badge
+                // Hat accessory
+                if let hat = pet.equippedHat, !pet.isAway {
+                    Image(systemName: hat.iconName)
+                        .font(.system(size: size * 0.15))
+                        .foregroundColor(hat.rarity.color)
+                        .offset(y: -size * 0.28)
+                }
+
+                // Sparkle effect for ecstatic mood OR equipped sparkle effect
+                if (pet.mood == .ecstatic || pet.equippedEffect?.id == "effect_sparkle") && !pet.isAway {
+                    SparkleEffect(isActive: true)
+                        .frame(width: size, height: size)
+                }
+
+                // Heart effect accessory
+                if pet.equippedEffect?.id == "effect_hearts" && !pet.isAway {
+                    SparkleEffect(isActive: true)
+                        .frame(width: size, height: size)
+                }
+
+                // Fire aura effect accessory
+                if pet.equippedEffect?.id == "effect_fire" && !pet.isAway {
+                    Circle()
+                        .stroke(Color.orange.opacity(0.4), lineWidth: 3)
+                        .frame(width: size * 0.85, height: size * 0.85)
+                        .blur(radius: 3)
+                }
+
+                // Lightning aura effect accessory
+                if pet.equippedEffect?.id == "effect_lightning" && !pet.isAway {
+                    Circle()
+                        .stroke(Color.yellow.opacity(0.5), lineWidth: 3)
+                        .frame(width: size * 0.85, height: size * 0.85)
+                        .blur(radius: 2)
+                }
+
+                // Tear drop effect for unhappy moods
+                if !pet.isAway {
+                    TearDropEffect(mood: pet.mood, size: size * 0.8)
+                }
+            }
+
+            // Level badge with evolution-based color
             if !pet.isAway {
                 ZStack {
                     Circle()
-                        .fill(Theme.primary)
+                        .fill(pet.evolutionStage.badgeColor)
                         .frame(width: size * 0.25, height: size * 0.25)
 
-                    Text("\(pet.level)")
+                    Text("\(pet.currentLevel)")
                         .font(.system(size: size * 0.12, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                 }
@@ -48,9 +99,6 @@ struct PetCompanionView: View {
             }
         }
         .frame(width: size, height: size)
-        .onAppear {
-            breatheAnimation = true
-        }
     }
 }
 
@@ -59,9 +107,9 @@ struct PetCompanionView: View {
         // Active pet
         PetCompanionView(
             pet: {
-                let pet = Pet(name: "Fluffy", species: .fox)
+                let pet = Pet(name: "Fluffy", species: .cat)
                 pet.happiness = 95
-                pet.level = 5
+                pet.totalXP = 500
                 return pet
             }(),
             size: 80
@@ -72,7 +120,7 @@ struct PetCompanionView: View {
             pet: {
                 let pet = Pet(name: "Spike", species: .dragon)
                 pet.happiness = 25
-                pet.level = 1
+                pet.totalXP = 100
                 return pet
             }(),
             size: 80
@@ -81,7 +129,7 @@ struct PetCompanionView: View {
         // Away pet
         PetCompanionView(
             pet: {
-                let pet = Pet(name: "Shelly", species: .turtle)
+                let pet = Pet(name: "Shelly", species: .plant)
                 pet.isAway = true
                 return pet
             }(),

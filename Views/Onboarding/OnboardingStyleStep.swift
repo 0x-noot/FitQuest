@@ -5,46 +5,41 @@ struct OnboardingStyleStep: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: PixelScale.px(4)) {
             // Header
-            VStack(spacing: 8) {
-                Text("What's your workout style?")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
-
-                Text("Choose your preferred training type")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+            VStack(spacing: PixelScale.px(1)) {
+                PixelText("WORKOUT STYLE?", size: .xlarge)
+                PixelText("CHOOSE YOUR TRAINING TYPE", size: .small, color: PixelTheme.textSecondary)
             }
-            .padding(.top, 8)
+            .padding(.top, PixelScale.px(2))
 
             Spacer()
 
             // Style options
-            VStack(spacing: 12) {
+            VStack(spacing: PixelScale.px(2)) {
                 ForEach(WorkoutStyle.allCases) { style in
-                    SelectionCard(
-                        title: style.displayName,
-                        description: style.description,
-                        iconName: style.iconName,
+                    OnboardingSelectionCard(
+                        title: style.displayName.uppercased(),
+                        description: style.description.uppercased(),
                         isSelected: selectedStyle == style
                     ) {
                         selectedStyle = style
                     }
                 }
             }
+            .padding(.horizontal, PixelScale.px(4))
 
             Spacer()
 
             // Continue button
-            PrimaryButton("Continue", icon: "arrow.right") {
+            PixelButton("CONTINUE >", style: .primary) {
                 onContinue()
             }
             .disabled(selectedStyle == nil)
             .opacity(selectedStyle == nil ? 0.5 : 1)
+            .padding(.horizontal, PixelScale.px(4))
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.vertical, PixelScale.px(4))
     }
 }
 
@@ -52,5 +47,5 @@ struct OnboardingStyleStep: View {
     OnboardingStyleStep(
         selectedStyle: .constant(.balanced)
     ) {}
-    .background(Theme.background)
+    .background(PixelTheme.background)
 }

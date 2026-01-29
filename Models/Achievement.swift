@@ -50,36 +50,36 @@ struct Achievement: Identifiable {
             isEarned: { $0.workouts.count >= 100 }
         ),
         Achievement(
-            id: "xp_hunter",
+            id: "pet_xp_hunter",
             name: "XP Hunter",
-            description: "Earn 10,000 total XP",
+            description: "Help your pet earn 10,000 XP",
             icon: "bolt.circle.fill",
             color: Theme.warning,
-            isEarned: { $0.totalXP >= 10000 }
+            isEarned: { $0.pet?.totalXP ?? 0 >= 10000 }
         ),
         Achievement(
-            id: "level_10",
+            id: "pet_level_10",
             name: "Rising Star",
-            description: "Reach level 10",
-            icon: "star.fill",
-            color: PlayerRank.silver.color,
-            isEarned: { $0.currentLevel >= 10 }
+            description: "Help your pet reach level 10",
+            icon: "sparkles",
+            color: Theme.primary,
+            isEarned: { $0.pet?.currentLevel ?? 0 >= 10 }
         ),
         Achievement(
-            id: "level_25",
+            id: "pet_level_25",
             name: "Champion",
-            description: "Reach level 25",
-            icon: "star.circle.fill",
-            color: PlayerRank.gold.color,
-            isEarned: { $0.currentLevel >= 25 }
+            description: "Help your pet reach level 25",
+            icon: "star.fill",
+            color: Theme.warning,
+            isEarned: { $0.pet?.currentLevel ?? 0 >= 25 }
         ),
         Achievement(
-            id: "level_50",
+            id: "pet_level_50",
             name: "Legend",
-            description: "Reach level 50",
+            description: "Help your pet reach level 50",
             icon: "crown.fill",
-            color: PlayerRank.platinum.color,
-            isEarned: { $0.currentLevel >= 50 }
+            color: Color.purple,
+            isEarned: { $0.pet?.currentLevel ?? 0 >= 50 }
         ),
         Achievement(
             id: "early_bird",

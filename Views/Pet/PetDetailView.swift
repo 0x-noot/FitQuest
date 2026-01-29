@@ -8,10 +8,10 @@ struct PetDetailView: View {
     @Bindable var pet: Pet
     @Bindable var player: Player
 
-    @State private var showLevelUpConfirm = false
     @State private var showTreatSheet = false
     @State private var showRecoveryConfirm = false
     @State private var recoveryMethod: RecoveryMethod = .workouts
+    @State private var showAccessoryShop = false
 
     enum RecoveryMethod {
         case workouts
@@ -19,64 +19,69 @@ struct PetDetailView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            // Title bar
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    PixelText("DONE", size: .small)
+                }
+
+                Spacer()
+
+                PixelText(pet.name.uppercased(), size: .medium)
+
+                Spacer()
+
+                // Spacer for balance
+                PixelText("    ", size: .small)
+            }
+            .padding(.horizontal, PixelScale.px(2))
+            .padding(.vertical, PixelScale.px(2))
+            .background(PixelTheme.gbDark)
+
+            Rectangle()
+                .fill(PixelTheme.border)
+                .frame(height: PixelScale.px(1))
+
+            // Content
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: PixelScale.px(3)) {
                     if pet.isAway {
                         awayStateView
                     } else {
                         activeStateView
                     }
                 }
-                .padding(20)
-                .padding(.bottom, 20)
+                .padding(PixelScale.px(2))
             }
-            .background(Theme.background)
-            .navigationTitle(pet.name)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.cardBackground, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                    .foregroundColor(Theme.textSecondary)
-                }
-            }
-            .sheet(isPresented: $showTreatSheet) {
-                TreatSelectionSheet(pet: pet, player: player)
-            }
-            .alert("Level Up \(pet.name)?", isPresented: $showLevelUpConfirm) {
-                Button("Cancel", role: .cancel) { }
-                Button("Level Up") {
-                    let success = PetManager.levelUpPet(pet: pet, player: player)
-                    if success {
-                        try? modelContext.save()
-                    }
-                }
-            } message: {
-                Text("Level up to Level \(pet.level + 1) for \(PetManager.levelUpCost(currentLevel: pet.level)) Essence? Your pet's XP bonus will increase!")
-            }
-            .alert("Recover \(pet.name)?", isPresented: $showRecoveryConfirm) {
-                Button("Cancel", role: .cancel) { }
-                Button("Recover") {
-                    let success: Bool
-                    if recoveryMethod == .workouts {
-                        success = PetManager.recoverPetWithWorkouts(pet: pet)
-                    } else {
-                        success = PetManager.recoverPetWithEssence(pet: pet, player: player)
-                    }
-                    if success {
-                        try? modelContext.save()
-                    }
-                }
-            } message: {
+        }
+        .background(PixelTheme.background)
+        .sheet(isPresented: $showTreatSheet) {
+            TreatSelectionSheet(pet: pet, player: player)
+        }
+        .sheet(isPresented: $showAccessoryShop) {
+            AccessoryShopView(player: player, pet: pet)
+        }
+        .alert("RECOVER \(pet.name.uppercased())?", isPresented: $showRecoveryConfirm) {
+            Button("CANCEL", role: .cancel) { }
+            Button("RECOVER") {
+                let success: Bool
                 if recoveryMethod == .workouts {
-                    Text("Your \(pet.species.displayName) will return with 50% happiness!")
+                    success = PetManager.recoverPetWithWorkouts(pet: pet)
                 } else {
-                    Text("Spend 150 Essence to bring your \(pet.species.displayName) back with 50% happiness?")
+                    success = PetManager.recoverPetWithEssence(pet: pet, player: player)
                 }
+                if success {
+                    try? modelContext.save()
+                }
+            }
+        } message: {
+            if recoveryMethod == .workouts {
+                Text("Your \(pet.species.displayName) will return with 50% happiness!")
+            } else {
+                Text("Spend 150 Essence to bring your \(pet.species.displayName) back with 50% happiness?")
             }
         }
     }
@@ -84,18 +89,18 @@ struct PetDetailView: View {
     // MARK: - Active State View
 
     private var activeStateView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: PixelScale.px(3)) {
             // Pet display
             petDisplaySection
+
+            // XP Progress section
+            xpProgressSection
 
             // Happiness section
             happinessSection
 
-            // Level & XP Bonus section
-            levelSection
-
-            // Feed treats section
-            feedSection
+            // Actions section
+            actionsSection
 
             // Species info
             speciesInfoSection
@@ -106,435 +111,283 @@ struct PetDetailView: View {
     }
 
     private var petDisplaySection: some View {
-        VStack(spacing: 16) {
-            PetCompanionView(pet: pet, size: 120)
+        PixelPanel(title: "YOUR PET") {
+            VStack(spacing: PixelScale.px(2)) {
+                // Pixel pet sprite
+                PixelSpriteView(
+                    sprite: PetSpriteLibrary.sprite(for: pet.species, stage: pet.evolutionStage),
+                    pixelSize: 5
+                )
+                .frame(width: 80, height: 80)
 
-            VStack(spacing: 4) {
-                Text(pet.name)
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
+                PixelText(pet.name.uppercased(), size: .large)
 
-                Text("\(pet.species.displayName) • Level \(pet.level)")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+                HStack(spacing: PixelScale.px(2)) {
+                    PixelText(pet.species.displayName.uppercased(), size: .small, color: PixelTheme.textSecondary)
+                    PixelText("LV.\(pet.currentLevel)", size: .small)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private var xpProgressSection: some View {
+        PixelPanel(title: "XP PROGRESS") {
+            VStack(spacing: PixelScale.px(2)) {
+                HStack {
+                    PixelText("TOTAL XP", size: .small, color: PixelTheme.textSecondary)
+                    Spacer()
+                    PixelText("\(pet.totalXP)", size: .medium)
+                }
+
+                PixelXPBar(
+                    currentXP: pet.totalXP - pet.xpForCurrentLevel,
+                    targetXP: pet.xpForNextLevel - pet.xpForCurrentLevel,
+                    currentLevel: pet.currentLevel
+                )
+
+                Rectangle()
+                    .fill(PixelTheme.border)
+                    .frame(height: PixelScale.px(1))
+
+                HStack {
+                    PixelText("XP BONUS", size: .small, color: PixelTheme.textSecondary)
+                    Spacer()
+                    PixelText(xpBonusText.uppercased(), size: .small)
+                }
+
+                if PetManager.hasXPBonus(happiness: pet.happiness) {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .star, size: 12)
+                        PixelText("+10% HAPPY BONUS!", size: .small)
+                    }
+                }
             }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .background(Theme.cardBackground)
-        .cornerRadius(16)
     }
 
     private var happinessSection: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Happiness")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
-
-                Spacer()
-
-                Text("\(Int(pet.happiness))%")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundColor(pet.mood.color)
-            }
-
-            // Happiness bar
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    // Background
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Theme.elevated)
-
-                    // Fill
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(
-                            LinearGradient(
-                                colors: [pet.mood.color, pet.mood.color.opacity(0.7)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .frame(width: geometry.size.width * (pet.happiness / 100.0))
+        PixelPanel(title: "HAPPINESS") {
+            VStack(spacing: PixelScale.px(2)) {
+                HStack {
+                    PixelText(pet.mood.emoji, size: .medium, uppercase: false)
+                    PixelText(pet.mood.rawValue.uppercased(), size: .small)
+                    Spacer()
+                    PixelText("\(Int(pet.happiness))%", size: .medium)
                 }
-            }
-            .frame(height: 12)
 
-            HStack {
-                Text(pet.mood.emoji)
-                    .font(.system(size: 14))
-
-                Text(pet.mood.description)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-
-                Spacer()
+                PixelHappinessBar(happiness: pet.happiness, mood: pet.mood)
             }
         }
-        .padding(16)
-        .background(Theme.cardBackground)
-        .cornerRadius(16)
     }
 
-    private var levelSection: some View {
-        VStack(spacing: 16) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Level \(pet.level)")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(Theme.textPrimary)
+    private var actionsSection: some View {
+        VStack(spacing: PixelScale.px(2)) {
+            // Feed treats
+            PixelPanel(title: "ACTIONS") {
+                VStack(spacing: PixelScale.px(2)) {
+                    Button {
+                        showTreatSheet = true
+                    } label: {
+                        HStack(spacing: PixelScale.px(2)) {
+                            PixelIconView(icon: .heartFill, size: 16)
+                            PixelText("GIVE TREAT", size: .small)
+                            Spacer()
+                            PixelText(">", size: .small)
+                        }
+                        .padding(PixelScale.px(2))
+                        .background(PixelTheme.gbLight)
+                        .pixelOutline()
+                    }
 
-                    Text("Current XP Bonus")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-                }
-
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(xpBonusText)
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.primary)
-
-                    if PetManager.hasXPBonus(happiness: pet.happiness) {
-                        Text("+10% happiness")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Theme.success)
+                    Button {
+                        showAccessoryShop = true
+                    } label: {
+                        HStack(spacing: PixelScale.px(2)) {
+                            PixelIconView(icon: .shop, size: 16)
+                            PixelText("ACCESSORY SHOP", size: .small)
+                            Spacer()
+                            let ownedCount = player.unlockedAccessories.count
+                            if ownedCount > 0 {
+                                PixelText("\(ownedCount) OWNED", size: .small, color: PixelTheme.textSecondary)
+                            }
+                            PixelText(">", size: .small)
+                        }
+                        .padding(PixelScale.px(2))
+                        .background(PixelTheme.gbLight)
+                        .pixelOutline()
                     }
                 }
             }
-
-            Divider()
-                .background(Theme.elevated)
-
-            // Level up button
-            let levelUpCost = PetManager.levelUpCost(currentLevel: pet.level)
-            let canAfford = player.essenceCurrency >= levelUpCost
-
-            Button {
-                showLevelUpConfirm = true
-            } label: {
-                HStack {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 18))
-
-                    Text("Level Up to \(pet.level + 1)")
-                        .font(.system(size: 16, weight: .semibold))
-
-                    Spacer()
-
-                    HStack(spacing: 4) {
-                        Text("\(levelUpCost)")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 14))
-                    }
-                }
-                .foregroundColor(canAfford ? .white : Theme.textMuted)
-                .padding(16)
-                .background(canAfford ? Theme.primary : Theme.elevated)
-                .cornerRadius(12)
-            }
-            .disabled(!canAfford)
         }
-        .padding(16)
-        .background(Theme.cardBackground)
-        .cornerRadius(16)
-    }
-
-    private var feedSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Feed Treats")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(Theme.textPrimary)
-
-            Button {
-                showTreatSheet = true
-            } label: {
-                HStack {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(Theme.warning)
-
-                    Text("Give Treat")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Theme.textPrimary)
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(Theme.textSecondary)
-                }
-                .padding(16)
-                .background(Theme.elevated)
-                .cornerRadius(12)
-            }
-        }
-        .padding(16)
-        .background(Theme.cardBackground)
-        .cornerRadius(16)
     }
 
     private var speciesInfoSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: pet.species.iconName)
-                    .font(.system(size: 20))
-                    .foregroundColor(Theme.primary)
+        PixelPanel(title: "SPECIES INFO") {
+            VStack(spacing: PixelScale.px(2)) {
+                HStack {
+                    PixelText(pet.species.displayName.uppercased(), size: .medium)
+                    Spacer()
+                    PixelText(pet.species.personality.uppercased(), size: .small, color: PixelTheme.textSecondary)
+                }
 
-                Text(pet.species.displayName)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
-            }
+                PixelText(pet.species.description.uppercased(), size: .small, color: PixelTheme.textSecondary)
 
-            Text(pet.species.description)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Theme.textSecondary)
-                .lineSpacing(4)
+                Rectangle()
+                    .fill(PixelTheme.border)
+                    .frame(height: PixelScale.px(1))
 
-            Divider()
-                .background(Theme.elevated)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Special Bonus")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Theme.textMuted)
+                PixelText("SPECIAL BONUS", size: .small, color: PixelTheme.textSecondary)
 
                 switch pet.species {
-                case .dragon:
-                    BonusRow(
-                        icon: "dumbbell.fill",
-                        text: "Strength XP",
-                        bonus: "+\(bonusPercentage(for: .strength))%",
-                        color: Theme.primary
+                case .dragon, .wolf:
+                    PixelBonusRow(
+                        icon: .dumbbell,
+                        text: "STRENGTH XP",
+                        bonus: "+\(bonusPercentage(for: .strength))%"
                     )
-                case .fox:
-                    BonusRow(
-                        icon: "figure.run",
-                        text: "Cardio XP",
-                        bonus: "+\(bonusPercentage(for: .cardio))%",
-                        color: Theme.secondary
+                case .cat:
+                    PixelBonusRow(
+                        icon: .run,
+                        text: "CARDIO XP",
+                        bonus: "+\(bonusPercentage(for: .cardio))%"
                     )
-                case .turtle:
-                    VStack(spacing: 6) {
-                        BonusRow(
-                            icon: "dumbbell.fill",
-                            text: "Strength XP",
-                            bonus: "+\(bonusPercentage(for: .strength))%",
-                            color: Theme.primary
+                case .plant, .dog:
+                    VStack(spacing: PixelScale.px(1)) {
+                        PixelBonusRow(
+                            icon: .dumbbell,
+                            text: "STRENGTH XP",
+                            bonus: "+\(bonusPercentage(for: .strength))%"
                         )
-                        BonusRow(
-                            icon: "figure.run",
-                            text: "Cardio XP",
-                            bonus: "+\(bonusPercentage(for: .cardio))%",
-                            color: Theme.secondary
+                        PixelBonusRow(
+                            icon: .run,
+                            text: "CARDIO XP",
+                            bonus: "+\(bonusPercentage(for: .cardio))%"
                         )
                     }
                 }
             }
         }
-        .padding(16)
-        .background(Theme.cardBackground)
-        .cornerRadius(16)
     }
 
     private var tipsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(Theme.warning)
-
-                Text("Tips")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                TipRow(text: "Happiness decays \(String(format: "%.1f", PetManager.passiveDecayPerDay))% per day")
-                TipRow(text: "Work out to restore +\(Int(PetManager.workoutHappinessBoost))% happiness")
-                TipRow(text: "Feed treats to boost happiness instantly")
-                TipRow(text: "Level up your pet to increase XP bonuses")
-                TipRow(text: "Keep happiness ≥90% for +10% XP bonus")
+        PixelPanel(title: "TIPS") {
+            VStack(alignment: .leading, spacing: PixelScale.px(1)) {
+                PixelTipRow(text: "PET LEVELS UP FROM WORKOUT XP")
+                PixelTipRow(text: "HAPPINESS DECAYS \(String(format: "%.1f", PetManager.passiveDecayPerDay))%/DAY")
+                PixelTipRow(text: "WORKOUTS RESTORE +\(Int(PetManager.workoutHappinessBoost))% HAPPY")
+                PixelTipRow(text: "TREATS BOOST HAPPINESS FAST")
+                PixelTipRow(text: "KEEP HAPPY ≥90% FOR +10% XP")
             }
         }
-        .padding(16)
-        .background(Theme.elevated)
-        .cornerRadius(16)
     }
 
     // MARK: - Away State View
 
     private var awayStateView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: PixelScale.px(3)) {
             // Away message
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(Theme.textMuted.opacity(0.2))
-                        .frame(width: 120, height: 120)
+            PixelPanel(title: "PET AWAY") {
+                VStack(spacing: PixelScale.px(2)) {
+                    PixelIconView(icon: .paw, size: 48)
+                        .opacity(0.5)
 
-                    Image(systemName: pet.species.iconName)
-                        .font(.system(size: 60))
-                        .foregroundColor(Theme.textMuted.opacity(0.5))
+                    PixelText("\(pet.name.uppercased()) RAN AWAY...", size: .medium)
+
+                    PixelText("HAPPINESS HIT 0%", size: .small, color: PixelTheme.textSecondary)
                 }
-
-                VStack(spacing: 8) {
-                    Text("\(pet.name) ran away...")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(Theme.textPrimary)
-
-                    Text("Your \(pet.species.displayName) left because happiness hit 0%")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                }
+                .frame(maxWidth: .infinity)
             }
-            .padding(.vertical, 24)
-            .frame(maxWidth: .infinity)
-            .background(Theme.cardBackground)
-            .cornerRadius(16)
 
             // Recovery options
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Recovery Options")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
+            PixelPanel(title: "RECOVERY OPTIONS") {
+                VStack(spacing: PixelScale.px(2)) {
+                    // Option 1: Complete workouts
+                    let canRecoverWithWorkouts = PetManager.canRecoverWithWorkouts(pet: pet, player: player)
 
-                // Option 1: Complete workouts
-                let canRecoverWithWorkouts = PetManager.canRecoverWithWorkouts(pet: pet, player: player)
+                    Button {
+                        recoveryMethod = .workouts
+                        showRecoveryConfirm = true
+                    } label: {
+                        HStack(spacing: PixelScale.px(2)) {
+                            PixelIconView(icon: .dumbbell, size: 16)
 
-                Button {
-                    recoveryMethod = .workouts
-                    showRecoveryConfirm = true
-                } label: {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Image(systemName: "figure.run.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(canRecoverWithWorkouts ? Theme.success : Theme.textMuted)
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Complete 3 Workouts")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(Theme.textPrimary)
-
-                                Text("In the last 7 days")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(Theme.textSecondary)
+                            VStack(alignment: .leading, spacing: PixelScale.px(1)) {
+                                PixelText("3 WORKOUTS", size: .small)
+                                PixelText("IN LAST 7 DAYS", size: .small, color: PixelTheme.textSecondary)
                             }
 
                             Spacer()
 
                             if canRecoverWithWorkouts {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(Theme.success)
+                                PixelIconView(icon: .check, size: 16)
                             }
                         }
+                        .padding(PixelScale.px(2))
+                        .background(canRecoverWithWorkouts ? PixelTheme.gbDark.opacity(0.3) : PixelTheme.gbLight)
+                        .pixelOutline()
                     }
-                    .padding(16)
-                    .background(canRecoverWithWorkouts ? Theme.success.opacity(0.15) : Theme.elevated)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(canRecoverWithWorkouts ? Theme.success : Color.clear, lineWidth: 2)
-                    )
-                }
-                .disabled(!canRecoverWithWorkouts)
+                    .disabled(!canRecoverWithWorkouts)
+                    .opacity(canRecoverWithWorkouts ? 1 : 0.5)
 
-                // Option 2: Pay essence
-                let canRecoverWithEssence = PetManager.canRecoverWithEssence(pet: pet, player: player)
+                    // Option 2: Pay essence
+                    let canRecoverWithEssence = PetManager.canRecoverWithEssence(pet: pet, player: player)
 
-                Button {
-                    recoveryMethod = .essence
-                    showRecoveryConfirm = true
-                } label: {
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 24))
-                                .foregroundColor(canRecoverWithEssence ? Theme.warning : Theme.textMuted)
+                    Button {
+                        recoveryMethod = .essence
+                        showRecoveryConfirm = true
+                    } label: {
+                        HStack(spacing: PixelScale.px(2)) {
+                            PixelIconView(icon: .sparkle, size: 16)
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Pay 150 Essence")
-                                    .font(.system(size: 16, weight: .semibold))
-                                    .foregroundColor(Theme.textPrimary)
-
-                                Text("Current: \(player.essenceCurrency) Essence")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(Theme.textSecondary)
+                            VStack(alignment: .leading, spacing: PixelScale.px(1)) {
+                                PixelText("PAY 150 ESSENCE", size: .small)
+                                PixelText("CURRENT: \(player.essenceCurrency)", size: .small, color: PixelTheme.textSecondary)
                             }
 
                             Spacer()
 
                             if canRecoverWithEssence {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(Theme.warning)
+                                PixelIconView(icon: .check, size: 16)
                             }
                         }
+                        .padding(PixelScale.px(2))
+                        .background(canRecoverWithEssence ? PixelTheme.gbDark.opacity(0.3) : PixelTheme.gbLight)
+                        .pixelOutline()
                     }
-                    .padding(16)
-                    .background(canRecoverWithEssence ? Theme.warning.opacity(0.15) : Theme.elevated)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(canRecoverWithEssence ? Theme.warning : Color.clear, lineWidth: 2)
-                    )
+                    .disabled(!canRecoverWithEssence)
+                    .opacity(canRecoverWithEssence ? 1 : 0.5)
                 }
-                .disabled(!canRecoverWithEssence)
             }
-            .padding(16)
-            .background(Theme.cardBackground)
-            .cornerRadius(16)
 
             // Info message
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Image(systemName: "info.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(Theme.secondary)
-
-                    Text("Recovery Info")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Theme.textPrimary)
-                }
-
-                Text("After recovery, \(pet.name) will return with 50% happiness. You'll still earn Essence from workouts even while your pet is away!")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-                    .lineSpacing(4)
+            PixelPanel(title: "INFO") {
+                PixelText("AFTER RECOVERY \(pet.name.uppercased()) RETURNS WITH 50% HAPPINESS. YOU STILL EARN ESSENCE FROM WORKOUTS!", size: .small, color: PixelTheme.textSecondary)
             }
-            .padding(16)
-            .background(Theme.elevated)
-            .cornerRadius(16)
         }
     }
 
     // MARK: - Helpers
 
     private var xpBonusText: String {
-        let strengthBonus = pet.species.xpMultiplier(for: .strength, petLevel: pet.level)
-        let cardioBonus = pet.species.xpMultiplier(for: .cardio, petLevel: pet.level)
+        let strengthBonus = pet.species.xpMultiplier(for: .strength, petLevel: pet.currentLevel)
+        let cardioBonus = pet.species.xpMultiplier(for: .cardio, petLevel: pet.currentLevel)
 
         switch pet.species {
-        case .dragon:
+        case .dragon, .wolf:
             let percentage = Int((strengthBonus - 1.0) * 100)
-            return "+\(percentage)%"
-        case .fox:
+            return "+\(percentage)% Strength"
+        case .cat:
             let percentage = Int((cardioBonus - 1.0) * 100)
-            return "+\(percentage)%"
-        case .turtle:
+            return "+\(percentage)% Cardio"
+        case .plant, .dog:
             let percentage = Int((strengthBonus - 1.0) * 100)
-            return "+\(percentage)%"
+            return "+\(percentage)% All XP"
         }
     }
 
     private func bonusPercentage(for workoutType: WorkoutType) -> String {
-        let multiplier = pet.species.xpMultiplier(for: workoutType, petLevel: pet.level)
+        let multiplier = pet.species.xpMultiplier(for: workoutType, petLevel: pet.currentLevel)
         let percentage = (multiplier - 1.0) * 100
         return String(format: "%.1f", percentage)
     }
@@ -542,44 +395,28 @@ struct PetDetailView: View {
 
 // MARK: - Helper Views
 
-struct BonusRow: View {
-    let icon: String
+struct PixelBonusRow: View {
+    let icon: PixelIcon
     let text: String
     let bonus: String
-    let color: Color
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(color)
-
-            Text(text)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Theme.textSecondary)
-
+        HStack(spacing: PixelScale.px(2)) {
+            PixelIconView(icon: icon, size: 12)
+            PixelText(text, size: .small, color: PixelTheme.textSecondary)
             Spacer()
-
-            Text(bonus)
-                .font(.system(size: 14, weight: .bold, design: .rounded))
-                .foregroundColor(color)
+            PixelText(bonus, size: .small)
         }
     }
 }
 
-struct TipRow: View {
+struct PixelTipRow: View {
     let text: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text("•")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Theme.textMuted)
-
-            Text(text)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Theme.textSecondary)
-
+        HStack(alignment: .top, spacing: PixelScale.px(1)) {
+            PixelText("-", size: .small, color: PixelTheme.textSecondary)
+            PixelText(text, size: .small, color: PixelTheme.textSecondary)
             Spacer(minLength: 0)
         }
     }
@@ -590,7 +427,7 @@ struct TipRow: View {
         pet: {
             let pet = Pet(name: "Fluffy", species: .dragon)
             pet.happiness = 85
-            pet.level = 5
+            pet.totalXP = 500
             return pet
         }(),
         player: {
@@ -599,5 +436,4 @@ struct TipRow: View {
             return p
         }()
     )
-    .preferredColorScheme(.dark)
 }

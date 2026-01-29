@@ -7,89 +7,81 @@ struct OnboardingWeeklyGoalStep: View {
     private var encouragingText: String {
         switch weeklyGoal {
         case 2:
-            return "A great starting point! Consistency beats intensity."
+            return "GREAT START! CONSISTENCY > INTENSITY"
         case 3:
-            return "Perfect for building a sustainable habit."
+            return "PERFECT FOR A SUSTAINABLE HABIT"
         case 4:
-            return "Solid commitment! You'll see steady progress."
+            return "SOLID! YOU'LL SEE STEADY PROGRESS"
         case 5:
-            return "Impressive dedication! Great for faster results."
+            return "IMPRESSIVE! GREAT FOR RESULTS"
         case 6:
-            return "High achiever mode! Make sure to rest."
+            return "HIGH ACHIEVER! DON'T FORGET REST"
         case 7:
-            return "Beast mode! Remember recovery is important."
+            return "BEAST MODE! RECOVERY IS KEY"
         default:
-            return "Set your weekly workout target."
+            return "SET YOUR WEEKLY TARGET"
         }
     }
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: PixelScale.px(4)) {
             // Header
-            VStack(spacing: 8) {
-                Text("Set your weekly goal")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
-
-                Text("How many days per week do you want to work out?")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-                    .multilineTextAlignment(.center)
+            VStack(spacing: PixelScale.px(1)) {
+                PixelText("WEEKLY GOAL", size: .xlarge)
+                PixelText("HOW MANY DAYS PER WEEK?", size: .small, color: PixelTheme.textSecondary)
             }
-            .padding(.top, 8)
+            .padding(.top, PixelScale.px(2))
 
             Spacer()
 
             // Goal display
-            VStack(spacing: 16) {
-                Text("\(weeklyGoal)")
-                    .font(.system(size: 72, weight: .bold, design: .rounded))
-                    .foregroundStyle(Theme.primaryGradient)
+            VStack(spacing: PixelScale.px(2)) {
+                PixelText("\(weeklyGoal)", size: .xlarge)
+                    .scaleEffect(2.0)
+                    .padding(.vertical, PixelScale.px(4))
 
-                Text("days per week")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+                PixelText("DAYS PER WEEK", size: .medium, color: PixelTheme.textSecondary)
             }
 
-            // Slider
-            VStack(spacing: 12) {
-                HStack {
-                    Text("2")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textMuted)
-                    Spacer()
-                    Text("7")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textMuted)
+            // Stepper controls (pixel style)
+            HStack(spacing: PixelScale.px(4)) {
+                PixelButton("-", style: .secondary) {
+                    if weeklyGoal > 2 {
+                        weeklyGoal -= 1
+                    }
                 }
+                .frame(width: PixelScale.px(12))
 
-                Slider(value: Binding(
-                    get: { Double(weeklyGoal) },
-                    set: { weeklyGoal = Int($0) }
-                ), in: 2...7, step: 1)
-                .tint(Theme.primary)
+                PixelProgressBar(
+                    progress: Double(weeklyGoal - 2) / 5.0,
+                    segments: 6
+                )
+
+                PixelButton("+", style: .secondary) {
+                    if weeklyGoal < 7 {
+                        weeklyGoal += 1
+                    }
+                }
+                .frame(width: PixelScale.px(12))
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, PixelScale.px(4))
 
             // Encouraging text
-            Text(encouragingText)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Theme.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
+            PixelPanel(title: "TIP") {
+                PixelText(encouragingText, size: .small, color: PixelTheme.textSecondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, PixelScale.px(4))
 
             Spacer()
 
             // Continue button
-            PrimaryButton("Continue", icon: "arrow.right") {
+            PixelButton("CONTINUE >", style: .primary) {
                 onContinue()
             }
+            .padding(.horizontal, PixelScale.px(4))
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.vertical, PixelScale.px(4))
     }
 }
 
@@ -97,5 +89,5 @@ struct OnboardingWeeklyGoalStep: View {
     OnboardingWeeklyGoalStep(
         weeklyGoal: .constant(4)
     ) {}
-    .background(Theme.background)
+    .background(PixelTheme.background)
 }

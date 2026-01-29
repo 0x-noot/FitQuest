@@ -7,115 +7,117 @@ struct TreatSelectionSheet: View {
 
     @Bindable var pet: Pet
     @Bindable var player: Player
+    var onTreatFed: (() -> Void)?
 
     @State private var selectedTreat: PetTreat?
     @State private var showSuccessAnimation = false
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                // Header
-                VStack(spacing: 12) {
-                    PetCompanionView(pet: pet, size: 80)
-
-                    VStack(spacing: 4) {
-                        Text("Feed \(pet.name)")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundColor(Theme.textPrimary)
-
-                        Text("Current happiness: \(Int(pet.happiness))%")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Theme.textSecondary)
-                    }
-                }
-                .padding(.top, 20)
-
-                // Essence balance
-                HStack {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 16))
-                        .foregroundColor(Theme.warning)
-
-                    Text("Your Essence:")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-
-                    Spacer()
-
-                    Text("\(player.essenceCurrency)")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.warning)
-                }
-                .padding(16)
-                .background(Theme.elevated)
-                .cornerRadius(12)
-
-                // Treat options
-                VStack(spacing: 12) {
-                    ForEach(PetTreat.allCases, id: \.self) { treat in
-                        TreatOptionButton(
-                            treat: treat,
-                            canAfford: player.essenceCurrency >= treat.essenceCost,
-                            isSelected: selectedTreat == treat,
-                            onTap: {
-                                selectedTreat = treat
-                            }
-                        )
-                    }
+        VStack(spacing: 0) {
+            // Title bar
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    PixelText("CANCEL", size: .small)
                 }
 
                 Spacer()
 
-                // Feed button
-                if let treat = selectedTreat {
-                    PrimaryButton("Feed \(treat.displayName)", icon: "heart.fill") {
-                        feedTreat(treat)
-                    }
-                    .disabled(player.essenceCurrency < treat.essenceCost)
-                    .opacity(player.essenceCurrency < treat.essenceCost ? 0.5 : 1.0)
-                }
+                PixelText("TREATS", size: .medium)
+
+                Spacer()
+
+                // Spacer for balance
+                PixelText("      ", size: .small)
             }
-            .padding(20)
-            .padding(.bottom, 20)
-            .background(Theme.background)
-            .navigationTitle("Treats")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.cardBackground, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
+            .padding(.horizontal, PixelScale.px(2))
+            .padding(.vertical, PixelScale.px(2))
+            .background(PixelTheme.gbDark)
+
+            Rectangle()
+                .fill(PixelTheme.border)
+                .frame(height: PixelScale.px(1))
+
+            // Content
+            ScrollView {
+                VStack(spacing: PixelScale.px(3)) {
+                    // Pet header
+                    PixelPanel(title: "FEED \(pet.name.uppercased())") {
+                        VStack(spacing: PixelScale.px(2)) {
+                            PixelSpriteView(
+                                sprite: PetSpriteLibrary.sprite(for: pet.species, stage: pet.evolutionStage),
+                                pixelSize: 4
+                            )
+                            .frame(width: 64, height: 64)
+
+                            PixelText("HAPPINESS: \(Int(pet.happiness))%", size: .small, color: PixelTheme.textSecondary)
+                        }
                     }
-                    .foregroundColor(Theme.textSecondary)
+
+                    // Essence balance
+                    PixelPanel(title: "YOUR ESSENCE") {
+                        HStack {
+                            PixelIconView(icon: .sparkle, size: 16)
+                            PixelText("BALANCE:", size: .small, color: PixelTheme.textSecondary)
+                            Spacer()
+                            PixelText("\(player.essenceCurrency)", size: .medium)
+                        }
+                    }
+
+                    // Treat options
+                    PixelPanel(title: "SELECT TREAT") {
+                        VStack(spacing: PixelScale.px(2)) {
+                            ForEach(PetTreat.allCases, id: \.self) { treat in
+                                PixelTreatOptionButton(
+                                    treat: treat,
+                                    canAfford: player.essenceCurrency >= treat.essenceCost,
+                                    isSelected: selectedTreat == treat,
+                                    onTap: {
+                                        selectedTreat = treat
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Feed button
+                    if let treat = selectedTreat {
+                        PixelButton("FEED \(treat.displayName.uppercased())", style: .primary) {
+                            feedTreat(treat)
+                        }
+                        .disabled(player.essenceCurrency < treat.essenceCost)
+                        .opacity(player.essenceCurrency < treat.essenceCost ? 0.5 : 1.0)
+                    }
                 }
+                .padding(PixelScale.px(2))
             }
-            .overlay(
-                Group {
-                    if showSuccessAnimation {
-                        successOverlay
-                    }
-                }
-            )
         }
+        .background(PixelTheme.background)
+        .overlay(
+            Group {
+                if showSuccessAnimation {
+                    successOverlay
+                }
+            }
+        )
     }
 
     private var successOverlay: some View {
         ZStack {
-            Theme.background.opacity(0.9)
+            PixelTheme.background.opacity(0.9)
                 .ignoresSafeArea()
 
-            VStack(spacing: 20) {
-                Image(systemName: "heart.fill")
-                    .font(.system(size: 60))
-                    .foregroundColor(Theme.warning)
-                    .scaleEffect(showSuccessAnimation ? 1.2 : 0.5)
-                    .opacity(showSuccessAnimation ? 1.0 : 0.0)
+            PixelPanel(title: "SUCCESS!") {
+                VStack(spacing: PixelScale.px(2)) {
+                    PixelIconView(icon: .heartFill, size: 48)
 
-                Text("+\(Int(selectedTreat?.happinessBoost ?? 0))% Happiness!")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
+                    PixelText("+\(Int(selectedTreat?.happinessBoost ?? 0))%", size: .xlarge)
+                    PixelText("HAPPINESS!", size: .medium, color: PixelTheme.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
             }
+            .padding(PixelScale.px(8))
         }
         .transition(.opacity)
     }
@@ -127,6 +129,9 @@ struct TreatSelectionSheet: View {
 
         // Save context
         try? modelContext.save()
+
+        // Notify callback
+        onTreatFed?()
 
         // Show success animation
         withAnimation(.spring(duration: 0.4)) {
@@ -140,7 +145,9 @@ struct TreatSelectionSheet: View {
     }
 }
 
-struct TreatOptionButton: View {
+// MARK: - Pixel Treat Option Button
+
+struct PixelTreatOptionButton: View {
     let treat: PetTreat
     let canAfford: Bool
     let isSelected: Bool
@@ -148,93 +155,44 @@ struct TreatOptionButton: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 16) {
-                // Icon
-                ZStack {
-                    Circle()
-                        .fill(canAfford ? Theme.warning.opacity(0.2) : Theme.elevated)
-                        .frame(width: 60, height: 60)
-
-                    Image(systemName: treat.iconName)
-                        .font(.system(size: iconSize))
-                        .foregroundColor(canAfford ? Theme.warning : Theme.textMuted)
-                }
-
+            HStack(spacing: PixelScale.px(2)) {
                 // Info
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(treat.displayName)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Theme.textPrimary)
+                VStack(alignment: .leading, spacing: PixelScale.px(1)) {
+                    PixelText(treat.displayName.uppercased(), size: .small)
 
-                    Text(treat.description)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-                        .lineLimit(2)
-
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.up.heart.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(Theme.success)
-
-                        Text("+\(Int(treat.happinessBoost))% happiness")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Theme.success)
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .heartFill, size: 10)
+                        PixelText("+\(Int(treat.happinessBoost))%", size: .small, color: PixelTheme.textSecondary)
                     }
                 }
 
                 Spacer()
 
                 // Cost
-                VStack(alignment: .trailing, spacing: 4) {
-                    HStack(spacing: 4) {
-                        Text("\(treat.essenceCost)")
-                            .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundColor(canAfford ? Theme.warning : Theme.textMuted)
-
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 14))
-                            .foregroundColor(canAfford ? Theme.warning : Theme.textMuted)
-                    }
-
-                    if !canAfford {
-                        Text("Not enough")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(Theme.textMuted)
-                    }
+                HStack(spacing: PixelScale.px(1)) {
+                    PixelText("\(treat.essenceCost)", size: .small, color: canAfford ? PixelTheme.text : PixelTheme.textSecondary)
+                    PixelIconView(icon: .sparkle, size: 12)
                 }
 
                 // Selection indicator
                 if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(Theme.primary)
+                    PixelIconView(icon: .check, size: 16)
                 }
             }
-            .padding(16)
-            .background(isSelected ? Theme.primary.opacity(0.1) : Theme.cardBackground)
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Theme.primary : (canAfford ? Color.clear : Theme.textMuted.opacity(0.3)), lineWidth: 2)
-            )
+            .padding(PixelScale.px(2))
+            .background(isSelected ? PixelTheme.gbDark.opacity(0.3) : PixelTheme.gbLight)
+            .pixelOutline()
         }
         .buttonStyle(.plain)
         .disabled(!canAfford)
-    }
-
-    private var iconSize: CGFloat {
-        switch treat {
-        case .small: return 20
-        case .medium: return 24
-        case .large: return 28
-        }
+        .opacity(canAfford ? 1 : 0.5)
     }
 }
 
 #Preview {
     TreatSelectionSheet(
         pet: {
-            let pet = Pet(name: "Fluffy", species: .fox)
+            let pet = Pet(name: "Fluffy", species: .cat)
             pet.happiness = 65
             return pet
         }(),
@@ -244,5 +202,4 @@ struct TreatOptionButton: View {
             return p
         }()
     )
-    .preferredColorScheme(.dark)
 }

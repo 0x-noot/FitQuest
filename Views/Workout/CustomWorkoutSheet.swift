@@ -20,130 +20,168 @@ struct CustomWorkoutSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Workout name
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Workout Name")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Theme.textSecondary)
+        VStack(spacing: 0) {
+            // Custom pixel title bar
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    PixelText("CANCEL", size: .small)
+                }
 
-                        TextField("e.g., Morning HIIT", text: $workoutName)
-                            .font(.system(size: 18))
-                            .foregroundColor(Theme.textPrimary)
-                            .padding(16)
-                            .background(Theme.cardBackground)
-                            .cornerRadius(12)
+                Spacer()
+
+                PixelText("CUSTOM WORKOUT", size: .medium)
+
+                Spacer()
+
+                // Spacer for balance
+                PixelText("      ", size: .small)
+            }
+            .padding(.horizontal, PixelScale.px(2))
+            .padding(.vertical, PixelScale.px(2))
+            .background(PixelTheme.gbDark)
+
+            Rectangle()
+                .fill(PixelTheme.border)
+                .frame(height: PixelScale.px(1))
+
+            // Content
+            ScrollView {
+                VStack(spacing: PixelScale.px(3)) {
+                    // Workout name
+                    PixelPanel(title: "NAME") {
+                        TextField("E.G. MORNING HIIT", text: $workoutName)
+                            .font(.custom("Menlo-Bold", size: PixelFontSize.medium.pointSize))
+                            .foregroundColor(PixelTheme.text)
+                            .textInputAutocapitalization(.characters)
                     }
 
                     // Workout type
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Type")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Theme.textSecondary)
+                    PixelPanel(title: "TYPE") {
+                        HStack(spacing: PixelScale.px(2)) {
+                            PixelButton(
+                                "CARDIO",
+                                style: workoutType == .cardio ? .primary : .secondary
+                            ) {
+                                workoutType = .cardio
+                            }
 
-                        Picker("Type", selection: $workoutType) {
-                            Text("Cardio").tag(WorkoutType.cardio)
-                            Text("Strength").tag(WorkoutType.strength)
+                            PixelButton(
+                                "STRENGTH",
+                                style: workoutType == .strength ? .primary : .secondary
+                            ) {
+                                workoutType = .strength
+                            }
                         }
-                        .pickerStyle(.segmented)
                     }
 
                     // Muscle group (for strength only)
                     if workoutType == .strength {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Muscle Group")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Theme.textSecondary)
-
-                            Picker("Muscle Group", selection: $muscleGroup) {
-                                ForEach(MuscleGroup.allCases) { group in
-                                    Text(group.displayName).tag(group)
+                        PixelPanel(title: "MUSCLE GROUP") {
+                            VStack(spacing: PixelScale.px(1)) {
+                                // Row 1
+                                HStack(spacing: PixelScale.px(1)) {
+                                    muscleGroupButton(.fullBody)
+                                    muscleGroupButton(.chest)
+                                    muscleGroupButton(.back)
+                                }
+                                // Row 2
+                                HStack(spacing: PixelScale.px(1)) {
+                                    muscleGroupButton(.legs)
+                                    muscleGroupButton(.shoulders)
+                                    muscleGroupButton(.core)
                                 }
                             }
-                            .pickerStyle(.menu)
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Theme.cardBackground)
-                            .cornerRadius(12)
                         }
 
                         // Uses weight toggle
-                        Toggle(isOn: $usesWeight) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Uses Weight")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(Theme.textPrimary)
-                                Text("Turn off for bodyweight exercises")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(Theme.textMuted)
+                        PixelPanel(title: "OPTIONS") {
+                            VStack(spacing: PixelScale.px(2)) {
+                                Button {
+                                    usesWeight.toggle()
+                                } label: {
+                                    HStack {
+                                        PixelText("USES WEIGHT", size: .small)
+                                        Spacer()
+                                        PixelCheckbox(isChecked: usesWeight)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+
+                                PixelText("TURN OFF FOR BODYWEIGHT", size: .small, color: PixelTheme.textSecondary)
                             }
                         }
-                        .tint(Theme.primary)
-                        .padding(16)
-                        .background(Theme.cardBackground)
-                        .cornerRadius(12)
                     }
 
                     // Save as template toggle
-                    Toggle(isOn: $saveAsTemplate) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Save as template")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(Theme.textPrimary)
-                            Text("Reuse this workout from Quick Workout")
-                                .font(.system(size: 12))
-                                .foregroundColor(Theme.textMuted)
+                    PixelPanel(title: "SAVE") {
+                        VStack(spacing: PixelScale.px(2)) {
+                            Button {
+                                saveAsTemplate.toggle()
+                            } label: {
+                                HStack {
+                                    PixelText("SAVE AS TEMPLATE", size: .small)
+                                    Spacer()
+                                    PixelCheckbox(isChecked: saveAsTemplate)
+                                }
+                            }
+                            .buttonStyle(.plain)
+
+                            PixelText("REUSE FROM QUICK WORKOUT", size: .small, color: PixelTheme.textSecondary)
                         }
                     }
-                    .tint(Theme.primary)
-                    .padding(16)
-                    .background(Theme.cardBackground)
-                    .cornerRadius(12)
 
-                    Spacer(minLength: 40)
+                    Spacer(minLength: PixelScale.px(4))
 
                     // Continue button
-                    PrimaryButton("Continue to Log", icon: "arrow.right") {
+                    PixelButton("CONTINUE >", style: .primary) {
                         showInputView = true
                     }
                     .disabled(!isValid)
                     .opacity(isValid ? 1 : 0.5)
                 }
-                .padding(20)
-            }
-            .background(Theme.background)
-            .navigationTitle("Custom Workout")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.cardBackground, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(Theme.textSecondary)
-                }
-            }
-            .sheet(isPresented: $showInputView) {
-                CustomWorkoutInputSheet(
-                    workoutName: workoutName,
-                    workoutType: workoutType,
-                    muscleGroup: muscleGroup,
-                    usesWeight: usesWeight,
-                    saveAsTemplate: saveAsTemplate,
-                    player: player,
-                    modelContext: modelContext,
-                    onComplete: { workout in
-                        onComplete(workout)
-                        dismiss()
-                    }
-                )
+                .padding(PixelScale.px(2))
             }
         }
+        .background(PixelTheme.background)
+        .sheet(isPresented: $showInputView) {
+            CustomWorkoutInputSheet(
+                workoutName: workoutName,
+                workoutType: workoutType,
+                muscleGroup: muscleGroup,
+                usesWeight: usesWeight,
+                saveAsTemplate: saveAsTemplate,
+                player: player,
+                modelContext: modelContext,
+                onComplete: { workout in
+                    onComplete(workout)
+                    dismiss()
+                }
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func muscleGroupButton(_ group: MuscleGroup) -> some View {
+        Button {
+            muscleGroup = group
+        } label: {
+            PixelText(
+                group.displayName.uppercased(),
+                size: .small,
+                color: muscleGroup == group ? PixelTheme.gbLightest : PixelTheme.text
+            )
+            .padding(.horizontal, PixelScale.px(2))
+            .padding(.vertical, PixelScale.px(1))
+            .background(muscleGroup == group ? PixelTheme.gbDark : PixelTheme.cardBackground)
+            .pixelOutline()
+        }
+        .buttonStyle(.plain)
     }
 }
+
+// MARK: - Custom Workout Input Sheet
 
 struct CustomWorkoutInputSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -192,20 +230,51 @@ struct CustomWorkoutInputSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            // Custom pixel title bar
+            HStack {
+                Button {
+                    dismiss()
+                } label: {
+                    PixelText("< BACK", size: .small)
+                }
+
+                Spacer()
+
+                PixelText("LOG WORKOUT", size: .medium)
+
+                Spacer()
+
+                // Spacer for balance
+                PixelText("      ", size: .small)
+            }
+            .padding(.horizontal, PixelScale.px(2))
+            .padding(.vertical, PixelScale.px(2))
+            .background(PixelTheme.gbDark)
+
+            Rectangle()
+                .fill(PixelTheme.border)
+                .frame(height: PixelScale.px(1))
+
+            // Content
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: PixelScale.px(3)) {
                     // Header
-                    HStack(spacing: 12) {
-                        Image(systemName: workoutType == .cardio ? "figure.run" : "dumbbell.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(workoutType == .cardio ? Theme.secondary : Theme.primary)
+                    PixelPanel(title: workoutName.uppercased()) {
+                        HStack(spacing: PixelScale.px(2)) {
+                            PixelIconView(
+                                icon: workoutType == .cardio ? .run : .dumbbell,
+                                size: 24
+                            )
 
-                        Text(workoutName)
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(Theme.textPrimary)
+                            PixelText(
+                                workoutType == .cardio ? "CARDIO" : "STRENGTH",
+                                size: .small,
+                                color: PixelTheme.textSecondary
+                            )
 
-                        Spacer()
+                            Spacer()
+                        }
                     }
 
                     // Inputs based on type
@@ -215,251 +284,209 @@ struct CustomWorkoutInputSheet: View {
                         cardioInputsView
                     }
 
-                    Divider()
-                        .background(Theme.elevated)
-
                     // XP Preview
                     xpPreviewView
 
                     // Complete button
-                    PrimaryButton("Complete Workout", icon: "checkmark") {
+                    PixelButton("COMPLETE", style: .primary) {
                         completeWorkout()
                     }
-                    .padding(.top, 8)
+                    .padding(.top, PixelScale.px(2))
                 }
-                .padding(20)
-            }
-            .background(Theme.background)
-            .navigationTitle("Log Workout")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.cardBackground, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Back") {
-                        dismiss()
-                    }
-                    .foregroundColor(Theme.textSecondary)
-                }
+                .padding(PixelScale.px(2))
             }
         }
+        .background(PixelTheme.background)
     }
+
+    // MARK: - Strength Inputs
 
     private var strengthInputsView: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: PixelScale.px(2)) {
             // Weight (only if usesWeight is true)
             if usesWeight {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Weight")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-
-                    HStack {
-                        Button { weight = max(0, weight - 5) } label: {
-                            Image(systemName: "minus.circle.fill")
-                                .font(.system(size: 28))
-                                .foregroundColor(Theme.primary)
+                PixelPanel(title: "WEIGHT") {
+                    HStack(spacing: PixelScale.px(2)) {
+                        PixelSmallButton(label: "-5") {
+                            weight = max(0, weight - 5)
                         }
 
-                        TextField("0", value: $weight, format: .number)
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(Theme.textPrimary)
-                            .multilineTextAlignment(.center)
-                            .keyboardType(.decimalPad)
-                            .frame(width: 100)
+                        Spacer()
 
-                        Text("lbs")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(Theme.textMuted)
+                        PixelText("\(Int(weight))", size: .xlarge)
 
-                        Button { weight += 5 } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 28))
-                                .foregroundColor(Theme.primary)
+                        PixelText("LBS", size: .small, color: PixelTheme.textSecondary)
+
+                        Spacer()
+
+                        PixelSmallButton(label: "+5") {
+                            weight += 5
                         }
                     }
-                    .frame(maxWidth: .infinity)
                 }
-                .padding(16)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
             }
 
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Reps")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
+            HStack(spacing: PixelScale.px(2)) {
+                // Reps
+                PixelPanel(title: "REPS") {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelSmallButton(label: "-") {
+                            reps = max(1, reps - 1)
+                        }
 
-                    Stepper(value: $reps, in: 1...100) {
-                        Text("\(reps)")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(Theme.textPrimary)
+                        Spacer()
+
+                        PixelText("\(reps)", size: .large)
+
+                        Spacer()
+
+                        PixelSmallButton(label: "+") {
+                            reps += 1
+                        }
                     }
                 }
-                .padding(16)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Sets")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
+                // Sets
+                PixelPanel(title: "SETS") {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelSmallButton(label: "-") {
+                            sets = max(1, sets - 1)
+                        }
 
-                    Stepper(value: $sets, in: 1...20) {
-                        Text("\(sets)")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(Theme.textPrimary)
+                        Spacer()
+
+                        PixelText("\(sets)", size: .large)
+
+                        Spacer()
+
+                        PixelSmallButton(label: "+") {
+                            sets += 1
+                        }
                     }
                 }
-                .padding(16)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
             }
         }
     }
+
+    // MARK: - Cardio Inputs
 
     private var cardioInputsView: some View {
-        VStack(spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Duration")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-
-                HStack {
-                    Button { durationMinutes = max(1, durationMinutes - 5) } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(Theme.secondary)
+        VStack(spacing: PixelScale.px(2)) {
+            // Duration
+            PixelPanel(title: "DURATION") {
+                HStack(spacing: PixelScale.px(2)) {
+                    PixelSmallButton(label: "-5") {
+                        durationMinutes = max(1, durationMinutes - 5)
                     }
 
-                    Text("\(durationMinutes)")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
-                        .frame(width: 80)
+                    Spacer()
 
-                    Text("min")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Theme.textMuted)
+                    PixelText("\(durationMinutes)", size: .xlarge)
 
-                    Button { durationMinutes += 5 } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(Theme.secondary)
+                    PixelText("MIN", size: .small, color: PixelTheme.textSecondary)
+
+                    Spacer()
+
+                    PixelSmallButton(label: "+5") {
+                        durationMinutes += 5
                     }
                 }
-                .frame(maxWidth: .infinity)
             }
-            .padding(16)
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
 
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Steps (optional)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-
-                    TextField("0", text: $steps)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
-                        .keyboardType(.numberPad)
+            HStack(spacing: PixelScale.px(2)) {
+                // Steps (optional)
+                PixelPanel(title: "STEPS") {
+                    VStack(spacing: PixelScale.px(1)) {
+                        PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
+                        TextField("0", text: $steps)
+                            .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
+                            .foregroundColor(PixelTheme.text)
+                            .multilineTextAlignment(.center)
+                            .keyboardType(.numberPad)
+                    }
                 }
-                .padding(16)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Calories (optional)")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
-
-                    TextField("0", text: $calories)
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
-                        .keyboardType(.numberPad)
+                // Calories (optional)
+                PixelPanel(title: "CALORIES") {
+                    VStack(spacing: PixelScale.px(1)) {
+                        PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
+                        TextField("0", text: $calories)
+                            .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
+                            .foregroundColor(PixelTheme.text)
+                            .multilineTextAlignment(.center)
+                            .keyboardType(.numberPad)
+                    }
                 }
-                .padding(16)
-                .background(Theme.cardBackground)
-                .cornerRadius(12)
             }
         }
     }
+
+    // MARK: - XP Preview
 
     private var xpPreviewView: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text("Estimated XP")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
-
-                Spacer()
-
-                HStack(spacing: 4) {
-                    Text("+\(estimatedXP)")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.success)
-
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(Theme.warning)
-                }
-            }
-
-            if let petBonus = petBonusText {
+        PixelPanel(title: "REWARDS") {
+            VStack(spacing: PixelScale.px(1)) {
+                // Main XP display
                 HStack {
                     if let pet = player.pet {
-                        Image(systemName: pet.species.iconName)
-                            .font(.system(size: 12))
-                            .foregroundColor(pet.mood.color)
+                        PixelText("\(pet.name) EARNS", size: .small, color: PixelTheme.textSecondary)
+                    } else {
+                        PixelText("XP EARNED", size: .small, color: PixelTheme.textSecondary)
                     }
-                    Text(petBonus)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.primary)
-                    Spacer()
-                }
-            }
 
-            if let bonus = XPCalculator.streakBonusDescription(streak: player.currentStreak) {
-                HStack {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.streak)
-                    Text(bonus)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.streak)
                     Spacer()
-                }
-            }
 
-            if player.isFirstWorkoutOfDay {
-                HStack {
-                    Image(systemName: "sunrise.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.warning)
-                    Text("+\(XPCalculator.dailyBonusXP) first workout bonus")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.warning)
-                    Spacer()
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelText("+\(estimatedXP)", size: .large)
+                        PixelText("XP", size: .small)
+                    }
                 }
-            }
 
-            if player.pet != nil {
-                HStack {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.warning)
-                    Text("+\(essenceEarned) Essence")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.warning)
-                    Spacer()
+                Rectangle()
+                    .fill(PixelTheme.border)
+                    .frame(height: PixelScale.px(1))
+                    .padding(.vertical, PixelScale.px(1))
+
+                // Pet bonus
+                if let petBonus = petBonusText {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .paw, size: 12)
+                        PixelText(petBonus.uppercased(), size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
+                }
+
+                // Streak bonus
+                if let bonus = XPCalculator.streakBonusDescription(streak: player.currentStreak) {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .flame, size: 12)
+                        PixelText(bonus.uppercased(), size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
+                }
+
+                // First workout bonus
+                if player.isFirstWorkoutOfDay {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .sun, size: 12)
+                        PixelText("+\(XPCalculator.dailyBonusXP) FIRST WORKOUT", size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
+                }
+
+                // Essence earned
+                if player.pet != nil {
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .sparkle, size: 12)
+                        PixelText("+\(essenceEarned) ESSENCE", size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
                 }
             }
         }
-        .padding(16)
-        .background(Theme.elevated)
-        .cornerRadius(12)
     }
+
+    // MARK: - Complete Workout
 
     private func completeWorkout() {
         // Create template if requested

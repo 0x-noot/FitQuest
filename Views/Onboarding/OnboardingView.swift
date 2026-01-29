@@ -6,8 +6,6 @@ struct OnboardingView: View {
     @Bindable var player: Player
 
     @State private var currentStep = 0
-    @State private var name: String = ""
-    @State private var character = CharacterAppearance()
     @State private var selectedGoals: Set<FitnessGoal> = []
     @State private var selectedLevel: FitnessLevel?
     @State private var selectedStyle: WorkoutStyle?
@@ -18,9 +16,9 @@ struct OnboardingView: View {
     @State private var petName: String = ""
 
     private var totalSteps: Int {
-        // Base steps: Welcome, Goals, Level, Style, Weekly Goal, Equipment, Character, Pet, Complete = 9
-        // Focus step only shows if "Build muscle" is selected = 10
-        selectedGoals.contains(.buildMuscle) ? 10 : 9
+        // Base steps: Welcome, Goals, Level, Style, Weekly Goal, Equipment, Pet, Complete = 8
+        // Focus step only shows if "Build muscle" is selected = 9
+        selectedGoals.contains(.buildMuscle) ? 9 : 8
     }
 
     private var showFocusStep: Bool {
@@ -31,40 +29,37 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             // Progress bar (hide on complete step)
             if currentStep < totalSteps - 1 {
-                HStack {
+                HStack(spacing: PixelScale.px(2)) {
                     // Back button
                     if currentStep > 0 {
                         Button(action: goBack) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(Theme.textSecondary)
-                                .frame(width: 44, height: 44)
+                            PixelText("<", size: .medium)
                         }
+                        .frame(width: PixelScale.px(6))
                     } else {
                         Spacer()
-                            .frame(width: 44)
+                            .frame(width: PixelScale.px(6))
                     }
 
-                    OnboardingProgressBar(
-                        currentStep: currentStep + 1,
-                        totalSteps: totalSteps
+                    // Progress bar
+                    PixelProgressBar(
+                        progress: Double(currentStep + 1) / Double(totalSteps),
+                        segments: totalSteps
                     )
 
                     // Step indicator
-                    Text("\(currentStep + 1)/\(totalSteps)")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(Theme.textMuted)
-                        .frame(width: 44)
+                    PixelText("\(currentStep + 1)/\(totalSteps)", size: .small, color: PixelTheme.textSecondary)
+                        .frame(width: PixelScale.px(10))
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.horizontal, PixelScale.px(2))
+                .padding(.top, PixelScale.px(2))
             }
 
             // Content
             stepContent
                 .animation(.easeInOut(duration: 0.3), value: currentStep)
         }
-        .background(Theme.background)
+        .background(PixelTheme.background)
     }
 
     @ViewBuilder
@@ -72,8 +67,6 @@ struct OnboardingView: View {
         switch currentStep {
         case 0:
             OnboardingWelcomeStep(
-                name: $name,
-                character: $character,
                 onContinue: { goToNextStep() }
             )
         case 1:
@@ -109,25 +102,13 @@ struct OnboardingView: View {
                     onContinue: { goToNextStep() }
                 )
             } else {
-                OnboardingCharacterStep(
-                    character: $character,
-                    onContinue: { goToNextStep() }
-                )
-            }
-        case 7:
-            if showFocusStep {
-                OnboardingCharacterStep(
-                    character: $character,
-                    onContinue: { goToNextStep() }
-                )
-            } else {
                 OnboardingPetStep(
                     selectedSpecies: $selectedPetSpecies,
                     petName: $petName,
                     onContinue: { goToNextStep() }
                 )
             }
-        case 8:
+        case 7:
             if showFocusStep {
                 OnboardingPetStep(
                     selectedSpecies: $selectedPetSpecies,
@@ -136,16 +117,18 @@ struct OnboardingView: View {
                 )
             } else {
                 OnboardingCompleteStep(
-                    playerName: name,
-                    character: character,
+                    playerName: "",
+                    petSpecies: selectedPetSpecies,
+                    petName: petName,
                     weeklyGoal: weeklyGoal,
                     onComplete: { completeOnboarding() }
                 )
             }
-        case 9:
+        case 8:
             OnboardingCompleteStep(
-                playerName: name,
-                character: character,
+                playerName: "",
+                petSpecies: selectedPetSpecies,
+                petName: petName,
                 weeklyGoal: weeklyGoal,
                 onComplete: { completeOnboarding() }
             )
@@ -170,7 +153,7 @@ struct OnboardingView: View {
 
     private func completeOnboarding() {
         // Save all onboarding data to player
-        player.name = name.trimmingCharacters(in: .whitespaces)
+        player.name = ""  // No user name needed
         player.fitnessGoals = Array(selectedGoals)
         player.fitnessLevel = selectedLevel
         player.workoutStyle = selectedStyle
@@ -178,18 +161,7 @@ struct OnboardingView: View {
         player.equipmentAccess = Array(selectedEquipment)
         player.focusAreas = Array(selectedFocusAreas)
 
-        // Update character
-        if let existingCharacter = player.character {
-            existingCharacter.bodyType = character.bodyType
-            existingCharacter.skinTone = character.skinTone
-            existingCharacter.hairStyle = character.hairStyle
-            existingCharacter.hairColor = character.hairColor
-        } else {
-            player.character = character
-            modelContext.insert(character)
-        }
-
-        // Create pet if selected
+        // Create pet (required in Fitogatchi)
         if let species = selectedPetSpecies {
             let trimmedName = petName.trimmingCharacters(in: .whitespaces)
             let pet = Pet(name: trimmedName.isEmpty ? species.displayName : trimmedName, species: species)
@@ -206,5 +178,5 @@ struct OnboardingView: View {
 
 #Preview {
     OnboardingView(player: Player(name: ""))
-        .modelContainer(for: [Player.self, CharacterAppearance.self], inMemory: true)
+        .modelContainer(for: [Player.self, Pet.self], inMemory: true)
 }

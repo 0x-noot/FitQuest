@@ -1,217 +1,127 @@
 import SwiftUI
 import SwiftData
 
+// MARK: - Profile Tab (Pixel Art Style)
+
 struct ProfileTab: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var player: Player
 
-    @State private var showCharacterCustomization = false
     @State private var isEditingName = false
     @State private var editedName: String = ""
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Avatar section
-                    avatarSection
-
-                    // Name section
-                    nameSection
-
-                    // Stats overview
-                    statsSection
-
-                    // Achievements
-                    AchievementsSection(player: player)
-
-                    // Preferences
-                    preferencesSection
-
-                    // About
-                    aboutSection
-                }
-                .padding(20)
-                .padding(.bottom, 100)
-            }
-            .background(Theme.background)
-            .navigationTitle("Profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.background, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .sheet(isPresented: $showCharacterCustomization) {
-                if let character = player.character {
-                    CharacterCustomizationView(character: character, playerRank: player.currentRank)
-                }
-            }
-        }
-    }
-
-    private var avatarSection: some View {
-        VStack(spacing: 16) {
-            if let character = player.character {
-                CharacterDisplayView(appearance: character, size: 140)
-            }
-
-            Button {
-                showCharacterCustomization = true
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 14))
-                    Text("Customize Avatar")
-                        .font(.system(size: 14, weight: .medium))
-                }
-                .foregroundColor(Theme.primary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Theme.primary.opacity(0.15))
-                .cornerRadius(20)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-        .background(Theme.cardBackground)
-        .cornerRadius(16)
-    }
-
-    private var nameSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("DISPLAY NAME")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Theme.textMuted)
-                .tracking(1)
-
+        VStack(spacing: PixelScale.px(2)) {
+            // Title bar
             HStack {
-                if isEditingName {
-                    TextField("Enter name", text: $editedName)
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Theme.textPrimary)
-                        .textFieldStyle(.plain)
-                        .onSubmit {
-                            saveName()
+                PixelText("PROFILE", size: .large)
+                Spacer()
+            }
+            .padding(.horizontal, PixelScale.px(2))
+            .padding(.top, PixelScale.px(2))
+
+            // Pet section
+            petSection
+                .padding(.horizontal, PixelScale.px(2))
+
+            // Stats section
+            statsSection
+                .padding(.horizontal, PixelScale.px(2))
+
+            // Settings section
+            settingsSection
+                .padding(.horizontal, PixelScale.px(2))
+
+            Spacer()
+        }
+        .background(PixelTheme.background)
+    }
+
+    // MARK: - Pet Section
+
+    private var petSection: some View {
+        PixelPanel(title: "PET") {
+            if let pet = player.pet {
+                HStack(spacing: PixelScale.px(3)) {
+                    // Small pet sprite
+                    PixelSpriteView(
+                        sprite: PetSpriteLibrary.sprite(for: pet.species, stage: pet.evolutionStage),
+                        pixelSize: 3
+                    )
+                    .frame(width: 48, height: 48)
+
+                    // Pet info
+                    VStack(alignment: .leading, spacing: PixelScale.px(1)) {
+                        PixelText(pet.name, size: .medium)
+                        PixelText("LV.\(pet.currentLevel) \(pet.species.displayName.uppercased())", size: .small, color: PixelTheme.textSecondary)
+
+                        // Happiness bar
+                        HStack(spacing: PixelScale.px(1)) {
+                            PixelText(pet.mood.emoji, size: .small, uppercase: false)
+                            PixelProgressBar(progress: pet.happiness / 100.0, segments: 6, height: PixelScale.px(2))
                         }
-
-                    Button {
-                        saveName()
-                    } label: {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Theme.success)
-                    }
-
-                    Button {
-                        isEditingName = false
-                        editedName = player.name
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Theme.textMuted)
-                    }
-                } else {
-                    Text(player.name)
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Theme.textPrimary)
-
-                    Spacer()
-
-                    Button {
-                        editedName = player.name
-                        isEditingName = true
-                    } label: {
-                        Image(systemName: "pencil.circle")
-                            .font(.system(size: 22))
-                            .foregroundColor(Theme.textSecondary)
                     }
                 }
+            } else {
+                HStack {
+                    PixelIconView(icon: .paw, size: 24)
+                    PixelText("NO PET", size: .medium, color: PixelTheme.textSecondary)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .padding(16)
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
         }
     }
+
+    // MARK: - Stats Section
 
     private var statsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("STATISTICS")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Theme.textMuted)
-                .tracking(1)
+        PixelPanel(title: "STATS") {
+            VStack(spacing: PixelScale.px(1)) {
+                PixelStatRow(icon: .flame, label: "STREAK", value: "\(player.currentStreak)")
+                PixelStatRow(icon: .trophy, label: "BEST", value: "\(player.highestStreak)")
+                PixelStatRow(icon: .sparkle, label: "ESSENCE", value: "\(player.essenceCurrency)")
+                PixelStatRow(icon: .dumbbell, label: "WORKOUTS", value: "\(player.workouts.count)")
 
-            VStack(spacing: 0) {
-                StatRow(label: "Current Level", value: "\(player.currentLevel)", icon: "star.fill", color: Theme.warning)
-                Divider().background(Theme.elevated)
-                StatRow(label: "Total XP", value: player.totalXP.formatted(), icon: "bolt.fill", color: Theme.success)
-                Divider().background(Theme.elevated)
-                StatRow(label: "Total Workouts", value: "\(player.workouts.count)", icon: "figure.run", color: Theme.primary)
-                Divider().background(Theme.elevated)
-                StatRow(label: "Current Streak", value: "\(player.currentStreak) days", icon: "flame.fill", color: Theme.streak)
-                Divider().background(Theme.elevated)
-                StatRow(label: "Highest Streak", value: "\(player.highestStreak) days", icon: "trophy.fill", color: Theme.warning)
-                Divider().background(Theme.elevated)
-                StatRow(label: "Member Since", value: formattedDate(player.createdAt), icon: "calendar", color: Theme.secondary)
+                if let pet = player.pet {
+                    PixelStatRow(icon: .bolt, label: "PET XP", value: "\(pet.totalXP)")
+                }
             }
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
         }
     }
 
-    private var preferencesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("PREFERENCES")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Theme.textMuted)
-                .tracking(1)
+    // MARK: - Settings Section
 
-            VStack(spacing: 0) {
-                PreferenceRow(
-                    icon: "bell.fill",
-                    title: "Notifications",
-                    subtitle: "Daily reminder at 1 PM",
-                    color: Theme.warning
-                ) {
-                    Toggle("", isOn: Binding(
+    private var settingsSection: some View {
+        PixelPanel(title: "SETTINGS") {
+            VStack(spacing: PixelScale.px(1)) {
+                // Sound toggle
+                PixelToggle(label: "SOUND", isOn: $player.soundEffectsEnabled)
+
+                // Notifications toggle
+                PixelToggle(
+                    label: "NOTIFY",
+                    isOn: Binding(
                         get: { player.notificationsEnabled },
                         set: { newValue in
                             Task {
                                 await handleNotificationToggle(newValue)
                             }
                         }
-                    ))
-                    .tint(Theme.primary)
-                    .labelsHidden()
+                    )
+                )
+
+                // Version info
+                HStack {
+                    PixelText("VERSION", size: .small, color: PixelTheme.textSecondary)
+                    Spacer()
+                    PixelText("2.0.0", size: .small, color: PixelTheme.textSecondary)
                 }
-
-                Divider().background(Theme.elevated)
-
-                PreferenceRow(
-                    icon: "speaker.wave.2.fill",
-                    title: "Sound Effects",
-                    subtitle: "Play sounds on actions",
-                    color: Theme.secondary
-                ) {
-                    Toggle("", isOn: $player.soundEffectsEnabled)
-                        .tint(Theme.primary)
-                        .labelsHidden()
-                }
-
-                Divider().background(Theme.elevated)
-
-                PreferenceRow(
-                    icon: "scalemass.fill",
-                    title: "Weight Unit",
-                    subtitle: "Pounds (lbs)",
-                    color: Theme.primary
-                ) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(Theme.textMuted)
-                }
+                .padding(.top, PixelScale.px(1))
             }
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
         }
     }
+
+    // MARK: - Notification Handler
 
     private func handleNotificationToggle(_ enabled: Bool) async {
         if enabled {
@@ -227,142 +137,75 @@ struct ProfileTab: View {
             try? modelContext.save()
         }
     }
-
-    private var aboutSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("ABOUT")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(Theme.textMuted)
-                .tracking(1)
-
-            VStack(spacing: 0) {
-                AboutRow(title: "Version", value: "1.2.0")
-                Divider().background(Theme.elevated)
-                AboutRow(title: "Build", value: "27 workouts, 11 achievements")
-            }
-            .background(Theme.cardBackground)
-            .cornerRadius(12)
-        }
-    }
-
-    private func saveName() {
-        let trimmed = editedName.trimmingCharacters(in: .whitespaces)
-        if !trimmed.isEmpty {
-            player.name = trimmed
-            try? modelContext.save()
-        }
-        isEditingName = false
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
-    }
 }
 
-// MARK: - Stat Row
+// MARK: - Pixel Stat Row
 
-struct StatRow: View {
+struct PixelStatRow: View {
+    let icon: PixelIcon
     let label: String
     let value: String
-    let icon: String
-    let color: Color
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(color)
-                .frame(width: 24)
-
-            Text(label)
-                .font(.system(size: 15))
-                .foregroundColor(Theme.textSecondary)
-
+        HStack(spacing: PixelScale.px(2)) {
+            PixelIconView(icon: icon, size: 12)
+            PixelText(label, size: .small)
             Spacer()
-
-            Text(value)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(Theme.textPrimary)
+            PixelText(value, size: .small)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.vertical, PixelScale.px(1))
     }
 }
 
-// MARK: - Preference Row
+// MARK: - Pixel Achievements Section
 
-struct PreferenceRow<Trailing: View>: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-    let color: Color
-    @ViewBuilder let trailing: () -> Trailing
+struct PixelAchievementsSection: View {
+    let player: Player
+
+    private var achievements: [(icon: PixelIcon, title: String, unlocked: Bool)] {
+        [
+            (.flame, "7 DAY STREAK", player.highestStreak >= 7),
+            (.flame, "30 DAY STREAK", player.highestStreak >= 30),
+            (.dumbbell, "10 WORKOUTS", player.workouts.count >= 10),
+            (.dumbbell, "50 WORKOUTS", player.workouts.count >= 50),
+            (.star, "REACH LV.10", (player.pet?.currentLevel ?? 0) >= 10),
+            (.dragon, "EVOLVE PET", (player.pet?.evolutionStage ?? .baby) != .baby),
+        ]
+    }
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(color.opacity(0.2))
-                    .frame(width: 32, height: 32)
-
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(color)
+        PixelPanel(title: "ACHIEVEMENTS") {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: PixelScale.px(2)) {
+                ForEach(achievements.indices, id: \.self) { index in
+                    let achievement = achievements[index]
+                    VStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: achievement.icon, size: 16)
+                            .opacity(achievement.unlocked ? 1.0 : 0.3)
+                        PixelText(achievement.title, size: .small, color: achievement.unlocked ? PixelTheme.text : PixelTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(PixelScale.px(2))
+                    .background(achievement.unlocked ? PixelTheme.gbDark.opacity(0.3) : Color.clear)
+                    .pixelOutline()
+                }
             }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.textPrimary)
-
-                Text(subtitle)
-                    .font(.system(size: 12))
-                    .foregroundColor(Theme.textMuted)
-            }
-
-            Spacer()
-
-            trailing()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
     }
 }
 
-// MARK: - About Row
-
-struct AboutRow: View {
-    let title: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(.system(size: 15))
-                .foregroundColor(Theme.textSecondary)
-
-            Spacer()
-
-            Text(value)
-                .font(.system(size: 15))
-                .foregroundColor(Theme.textMuted)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-    }
-}
+// MARK: - Preview
 
 #Preview {
     ProfileTab(player: {
         let p = Player(name: "FitGamer")
-        p.totalXP = 2450
         p.currentStreak = 7
         p.highestStreak = 14
-        p.character = CharacterAppearance()
+        p.essenceCurrency = 250
+        let pet = Pet(name: "Ember", species: .dragon)
+        pet.totalXP = 2450
+        p.pet = pet
         return p
     }())
-    .modelContainer(for: [Player.self, Workout.self, CharacterAppearance.self], inMemory: true)
+    .modelContainer(for: [Player.self, Workout.self, Pet.self], inMemory: true)
 }

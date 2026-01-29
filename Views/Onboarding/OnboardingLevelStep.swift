@@ -5,46 +5,72 @@ struct OnboardingLevelStep: View {
     let onContinue: () -> Void
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: PixelScale.px(4)) {
             // Header
-            VStack(spacing: 8) {
-                Text("What's your fitness level?")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
-
-                Text("Be honest - we'll tailor your experience")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
+            VStack(spacing: PixelScale.px(1)) {
+                PixelText("FITNESS LEVEL?", size: .xlarge)
+                PixelText("BE HONEST - WE'LL TAILOR IT", size: .small, color: PixelTheme.textSecondary)
             }
-            .padding(.top, 8)
+            .padding(.top, PixelScale.px(2))
 
             Spacer()
 
             // Level options
-            VStack(spacing: 12) {
+            VStack(spacing: PixelScale.px(2)) {
                 ForEach(FitnessLevel.allCases) { level in
-                    SelectionCard(
-                        title: level.displayName,
-                        description: level.description,
-                        iconName: level.iconName,
+                    OnboardingSelectionCard(
+                        title: level.displayName.uppercased(),
+                        description: level.description.uppercased(),
                         isSelected: selectedLevel == level
                     ) {
                         selectedLevel = level
                     }
                 }
             }
+            .padding(.horizontal, PixelScale.px(4))
 
             Spacer()
 
             // Continue button
-            PrimaryButton("Continue", icon: "arrow.right") {
+            PixelButton("CONTINUE >", style: .primary) {
                 onContinue()
             }
             .disabled(selectedLevel == nil)
             .opacity(selectedLevel == nil ? 0.5 : 1)
+            .padding(.horizontal, PixelScale.px(4))
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
+        .padding(.vertical, PixelScale.px(4))
+    }
+}
+
+// MARK: - Onboarding Selection Card
+
+struct OnboardingSelectionCard: View {
+    let title: String
+    let description: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: PixelScale.px(2)) {
+                VStack(alignment: .leading, spacing: PixelScale.px(1)) {
+                    PixelText(title, size: .small)
+                    PixelText(description, size: .small, color: PixelTheme.textSecondary)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                if isSelected {
+                    PixelIconView(icon: .check, size: 16)
+                }
+            }
+            .padding(PixelScale.px(2))
+            .background(isSelected ? PixelTheme.gbDark.opacity(0.3) : PixelTheme.cardBackground)
+            .pixelOutline()
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -52,5 +78,5 @@ struct OnboardingLevelStep: View {
     OnboardingLevelStep(
         selectedLevel: .constant(.intermediate)
     ) {}
-    .background(Theme.background)
+    .background(PixelTheme.background)
 }

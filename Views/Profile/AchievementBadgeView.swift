@@ -165,13 +165,16 @@ struct AchievementsSection: View {
 }
 
 #Preview {
-    let player = Player(name: "Test")
-    player.totalXP = 5000
-    player.currentStreak = 7
-    player.highestStreak = 14
-
-    return ScrollView {
-        AchievementsSection(player: player)
+    ScrollView {
+        AchievementsSection(player: {
+            let player = Player(name: "Test")
+            player.currentStreak = 7
+            player.highestStreak = 14
+            let pet = Pet(name: "Ember", species: .dragon)
+            pet.totalXP = 5000
+            player.pet = pet
+            return player
+        }())
             .padding()
     }
     .background(Color(red: 0.05, green: 0.05, blue: 0.06))
