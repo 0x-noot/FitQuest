@@ -9,7 +9,15 @@ class NotificationManager: NSObject, ObservableObject {
     @Published var isAuthorized = false
 
     private let notificationCenter = UNUserNotificationCenter.current()
+
+    // Guilt-based notification identifiers (Duolingo-style)
+    private let morningGuiltIdentifier = "fitquest.guilt.morning"      // 9 AM
+    private let afternoonGuiltIdentifier = "fitquest.guilt.afternoon"  // 3 PM
+
+    // Legacy identifier for backward compatibility
     private let workoutReminderIdentifier = "fitquest.workout.reminder"
+
+    // Pet notification identifiers
     private let petHungryIdentifier = "fitquest.pet.hungry"
     private let petSadIdentifier = "fitquest.pet.sad"
     private let petLeavingIdentifier = "fitquest.pet.leaving"
@@ -42,61 +50,129 @@ class NotificationManager: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Scheduling
+    // MARK: - Guilt-Based Workout Reminders (Duolingo-style)
 
-    /// Schedule daily workout reminder at 1 PM
-    func scheduleDailyReminder() {
-        // First remove any existing reminder
-        cancelDailyReminder()
+    /// Schedule guilt notifications for morning (9 AM) and afternoon (3 PM)
+    /// Only sends if user hasn't worked out - cancelled when workout is logged
+    func scheduleGuiltReminders(pet: Pet) {
+        // Cancel any existing guilt reminders first
+        cancelGuiltReminders()
 
-        // Create content
+        guard !pet.isAway else { return }
+
+        // Schedule morning guilt (9 AM)
+        scheduleGuiltNotification(
+            identifier: morningGuiltIdentifier,
+            pet: pet,
+            hour: 9,
+            minute: 0,
+            timeOfDay: .morning
+        )
+
+        // Schedule afternoon guilt (3 PM)
+        scheduleGuiltNotification(
+            identifier: afternoonGuiltIdentifier,
+            pet: pet,
+            hour: 15,
+            minute: 0,
+            timeOfDay: .afternoon
+        )
+    }
+
+    private func scheduleGuiltNotification(
+        identifier: String,
+        pet: Pet,
+        hour: Int,
+        minute: Int,
+        timeOfDay: GuiltNotificationMessages.TimeOfDay
+    ) {
+        let message = GuiltNotificationMessages.getGuiltMessage(
+            petName: pet.name,
+            species: pet.species,
+            mood: pet.mood,
+            timeOfDay: timeOfDay
+        )
+
         let content = UNMutableNotificationContent()
-        content.title = "Time to Work Out!"
-        content.body = getRandomReminderMessage()
+        content.title = message.title
+        content.body = message.body
         content.sound = .default
         content.badge = 1
 
-        // Schedule for 1 PM daily
         var dateComponents = DateComponents()
-        dateComponents.hour = 13  // 1 PM
-        dateComponents.minute = 0
+        dateComponents.hour = hour
+        dateComponents.minute = minute
 
         let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
 
         let request = UNNotificationRequest(
-            identifier: workoutReminderIdentifier,
+            identifier: identifier,
             content: content,
             trigger: trigger
         )
 
         notificationCenter.add(request) { error in
             if let error = error {
-                print("Error scheduling notification: \(error)")
+                print("Error scheduling guilt notification (\(identifier)): \(error)")
             }
         }
     }
 
+    /// Cancel both guilt reminders
+    func cancelGuiltReminders() {
+        notificationCenter.removePendingNotificationRequests(withIdentifiers: [
+            morningGuiltIdentifier,
+            afternoonGuiltIdentifier,
+            workoutReminderIdentifier  // Also cancel legacy identifier
+        ])
+    }
+
+    /// Cancel today's guilt notifications after workout completion
+    func cancelTodayGuiltNotifications() {
+        // Remove pending (not yet delivered)
+        cancelGuiltReminders()
+
+        // Remove already delivered
+        notificationCenter.removeDeliveredNotifications(withIdentifiers: [
+            morningGuiltIdentifier,
+            afternoonGuiltIdentifier,
+            workoutReminderIdentifier
+        ])
+
+        // Clear badge
+        UNUserNotificationCenter.current().setBadgeCount(0)
+    }
+
+    /// Refresh guilt notifications with current pet state
+    /// Call this when pet mood changes or app becomes active
+    func refreshGuiltNotifications(pet: Pet, hasWorkedOutToday: Bool) {
+        guard !hasWorkedOutToday else {
+            cancelTodayGuiltNotifications()
+            return
+        }
+
+        // Re-schedule with current pet mood for updated messaging
+        scheduleGuiltReminders(pet: pet)
+    }
+
+    // MARK: - Legacy Methods (Backward Compatibility)
+
+    /// Schedule daily workout reminder - now schedules guilt reminders instead
+    func scheduleDailyReminder() {
+        // Legacy method - guilt reminders require pet context
+        // This is kept for backward compatibility but does nothing without pet
+        cancelDailyReminder()
+    }
+
     /// Cancel the daily reminder
     func cancelDailyReminder() {
-        notificationCenter.removePendingNotificationRequests(withIdentifiers: [workoutReminderIdentifier])
+        cancelGuiltReminders()
     }
 
     /// Cancel today's notification if user has already worked out
     func cancelTodayReminderIfWorkedOut(hasWorkedOutToday: Bool) {
         guard hasWorkedOutToday else { return }
-
-        // Get pending notifications and remove today's if it exists
-        notificationCenter.getPendingNotificationRequests { [weak self] requests in
-            guard let self = self else { return }
-
-            // The calendar trigger will fire again tomorrow, so we just need to
-            // make sure we don't show it today. We can do this by checking
-            // delivered notifications and removing them.
-            self.notificationCenter.removeDeliveredNotifications(withIdentifiers: [self.workoutReminderIdentifier])
-        }
-
-        // Clear badge
-        UNUserNotificationCenter.current().setBadgeCount(0)
+        cancelTodayGuiltNotifications()
     }
 
     // MARK: - Pet Notifications
@@ -206,22 +282,220 @@ class NotificationManager: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Helper Methods
+}
 
-    private func getRandomReminderMessage() -> String {
-        let messages = [
-            "Your streak is waiting! Time to level up.",
-            "Don't break your streak! A quick workout awaits.",
-            "Ready to earn some XP? Let's get moving!",
-            "Your character is getting restless. Time for a workout!",
-            "Level up your fitness game today!",
-            "A workout a day keeps the streak decay away!",
-            "Your future self will thank you. Let's go!",
-            "Time to add another workout to your quest!",
-            "Every rep counts towards your next level!",
-            "Your streak is calling. Answer with gains!"
+// MARK: - Guilt Notification Messages
+
+struct GuiltNotificationMessages {
+
+    enum TimeOfDay {
+        case morning
+        case afternoon
+    }
+
+    static func getGuiltMessage(
+        petName: String,
+        species: PetSpecies,
+        mood: PetMood,
+        timeOfDay: TimeOfDay
+    ) -> (title: String, body: String) {
+
+        let messages = speciesMessages(for: species, petName: petName, mood: mood, timeOfDay: timeOfDay)
+        return messages.randomElement() ?? (
+            title: "\(petName) misses you!",
+            body: "Log a workout to make your \(species.displayName) happy!"
+        )
+    }
+
+    private static func speciesMessages(
+        for species: PetSpecies,
+        petName: String,
+        mood: PetMood,
+        timeOfDay: TimeOfDay
+    ) -> [(title: String, body: String)] {
+
+        switch species {
+        case .plant:
+            return plantGuiltMessages(petName: petName, mood: mood, timeOfDay: timeOfDay)
+        case .cat:
+            return catGuiltMessages(petName: petName, mood: mood, timeOfDay: timeOfDay)
+        case .dog:
+            return dogGuiltMessages(petName: petName, mood: mood, timeOfDay: timeOfDay)
+        case .wolf:
+            return wolfGuiltMessages(petName: petName, mood: mood, timeOfDay: timeOfDay)
+        case .dragon:
+            return dragonGuiltMessages(petName: petName, mood: mood, timeOfDay: timeOfDay)
+        }
+    }
+
+    // MARK: - Plant Messages
+
+    private static func plantGuiltMessages(petName: String, mood: PetMood, timeOfDay: TimeOfDay) -> [(title: String, body: String)] {
+        var messages: [(String, String)] = [
+            ("\(petName) is wilting...", "Your Sprout needs the energy from your workout to grow!"),
+            ("\(petName) feels neglected", "Plants need attention too. A workout will help \(petName) flourish!"),
+            ("Your Sprout is drooping", "\(petName) is waiting patiently for you to exercise..."),
+            ("\(petName) is thirsty for XP!", "Water your Sprout with a workout today"),
+            ("Don't forget \(petName)!", "Your little plant companion is counting on you to work out")
         ]
-        return messages.randomElement() ?? messages[0]
+
+        if mood == .sad || mood == .unhappy || mood == .miserable {
+            messages += [
+                ("\(petName) is withering away!", "Your Sprout's leaves are turning brown. A workout could save them!"),
+                ("URGENT: \(petName) needs you!", "Your plant's happiness is critically low. Please work out!"),
+                ("\(petName) might not make it...", "Your Sprout is barely hanging on. One workout could change everything!")
+            ]
+        }
+
+        if timeOfDay == .morning {
+            messages += [
+                ("Good morning from \(petName)!", "Your Sprout has been waiting all night for you to exercise"),
+                ("\(petName) is ready to grow!", "Start the day right - your plant is counting on you")
+            ]
+        } else {
+            messages += [
+                ("\(petName) has been waiting all day", "The afternoon sun is fading, and so is \(petName)'s hope..."),
+                ("Still no workout?", "\(petName) watched the whole day pass without you exercising")
+            ]
+        }
+
+        return messages
+    }
+
+    // MARK: - Cat Messages
+
+    private static func catGuiltMessages(petName: String, mood: PetMood, timeOfDay: TimeOfDay) -> [(title: String, body: String)] {
+        var messages: [(String, String)] = [
+            ("\(petName) is judging you", "Your Cat has noticed you haven't worked out. The disappointment is palpable."),
+            ("\(petName) knocked over your water bottle", "Maybe they're trying to tell you something about hydration and exercise..."),
+            ("*disappointed meow*", "\(petName) expected better from their human today"),
+            ("\(petName) turned their back on you", "Win back your Cat's approval with a workout!"),
+            ("Your Cat is unimpressed", "\(petName) is giving you the silent treatment until you exercise")
+        ]
+
+        if mood == .sad || mood == .unhappy || mood == .miserable {
+            messages += [
+                ("\(petName) has given up on you", "Your Cat doesn't even bother judging anymore. They're just... sad."),
+                ("\(petName) stopped grooming", "A neglected cat is a sad cat. Please work out!"),
+                ("*sad hiss*", "\(petName) has lost faith in their human")
+            ]
+        }
+
+        if timeOfDay == .morning {
+            messages += [
+                ("\(petName) woke you up for this?", "Your Cat expected you to be exercising by now"),
+                ("Morning judgment from \(petName)", "Your Cat has been waiting since dawn for you to exercise")
+            ]
+        } else {
+            messages += [
+                ("\(petName) noticed you're still here", "Even half-asleep, your Cat knows you skipped your workout"),
+                ("Afternoon shade from \(petName)", "Your Cat's afternoon nap was ruined by your lack of exercise")
+            ]
+        }
+
+        return messages
+    }
+
+    // MARK: - Dog Messages
+
+    private static func dogGuiltMessages(petName: String, mood: PetMood, timeOfDay: TimeOfDay) -> [(title: String, body: String)] {
+        var messages: [(String, String)] = [
+            ("\(petName) is waiting by the door...", "Your Dog has been hoping you'd go for a workout. Those sad puppy eyes!"),
+            ("\(petName) brought you their toy", "Your pup wants to play... and for you to exercise!"),
+            ("*sad puppy whimper*", "\(petName) doesn't understand why you haven't worked out yet"),
+            ("\(petName) keeps looking at you", "Those loyal eyes are asking: 'When are we exercising, human?'"),
+            ("Your best friend misses you", "\(petName) has been patiently waiting for your workout all day")
+        ]
+
+        if mood == .sad || mood == .unhappy || mood == .miserable {
+            messages += [
+                ("\(petName) has stopped wagging", "Your Dog's tail hasn't moved in hours. They're losing hope."),
+                ("\(petName) is lying by the door, waiting...", "Your loyal friend refuses to give up on you"),
+                ("*heartbreaking whimper*", "\(petName) just wants their human to be healthy and happy")
+            ]
+        }
+
+        if timeOfDay == .morning {
+            messages += [
+                ("\(petName) is READY FOR THE DAY!", "Your excited pup has been up since dawn waiting for workout time!"),
+                ("Good morning! \(petName) is excited!", "Your Dog woke up hoping today would be a workout day...")
+            ]
+        } else {
+            messages += [
+                ("\(petName) has been waiting all day...", "Your loyal Dog still believes you'll work out. Don't let them down!"),
+                ("The day is passing without exercise", "\(petName) watches the sun, still hoping you'll work out")
+            ]
+        }
+
+        return messages
+    }
+
+    // MARK: - Wolf Messages
+
+    private static func wolfGuiltMessages(petName: String, mood: PetMood, timeOfDay: TimeOfDay) -> [(title: String, body: String)] {
+        var messages: [(String, String)] = [
+            ("The pack is incomplete", "\(petName) needs their alpha to lead the hunt. Work out today!"),
+            ("\(petName) howls for you", "Your Wolf senses you haven't trained. The pack grows weak."),
+            ("A wolf alone is vulnerable", "\(petName) needs your strength. Don't abandon your pack!"),
+            ("\(petName) is losing respect", "In the wild, the pack leader must stay strong. Work out!"),
+            ("The hunt awaits", "\(petName) is ready to conquer, but needs you to lead the way")
+        ]
+
+        if mood == .sad || mood == .unhappy || mood == .miserable {
+            messages += [
+                ("\(petName) questions your leadership", "A pack leader who doesn't train loses their pack..."),
+                ("*lonely howl*", "\(petName) feels abandoned by their alpha"),
+                ("The pack bond is weakening", "Your Wolf needs you to step up. NOW.")
+            ]
+        }
+
+        if timeOfDay == .morning {
+            messages += [
+                ("The morning hunt begins!", "\(petName) is ready to train at dawn. Where are you?"),
+                ("\(petName) rises with the sun", "Your Wolf expected their pack leader to be training already")
+            ]
+        } else {
+            messages += [
+                ("The day slips away", "\(petName) watched prey escape all day while waiting for you"),
+                ("Afternoon grows late", "\(petName) begins to wonder if the pack will hunt today at all")
+            ]
+        }
+
+        return messages
+    }
+
+    // MARK: - Dragon Messages
+
+    private static func dragonGuiltMessages(petName: String, mood: PetMood, timeOfDay: TimeOfDay) -> [(title: String, body: String)] {
+        var messages: [(String, String)] = [
+            ("\(petName)'s flame grows dim", "Even legendary creatures need their trainer to work out!"),
+            ("A dragon's fire needs fuel", "\(petName) can only burn bright when you exercise!"),
+            ("\(petName) is disappointed in you", "Dragons remember. They remember EVERYTHING."),
+            ("Your Dragon awaits", "\(petName) expected legendary effort from you today..."),
+            ("Legends are built daily", "\(petName) wonders if their trainer has what it takes")
+        ]
+
+        if mood == .sad || mood == .unhappy || mood == .miserable {
+            messages += [
+                ("\(petName)'s fire is dying", "A dragon without flame is just a large sad lizard..."),
+                ("*feeble smoke puff*", "\(petName) can barely breathe fire anymore. Help them!"),
+                ("The legend fades", "Your Dragon's power wanes with each missed workout")
+            ]
+        }
+
+        if timeOfDay == .morning {
+            messages += [
+                ("\(petName) ROARS for morning training!", "Your Dragon expected to forge legends at dawn!"),
+                ("The dragon stirs", "\(petName) awakens hungry for the fire of your workout")
+            ]
+        } else {
+            messages += [
+                ("\(petName) has been smoldering all day", "Your Dragon's patience runs thin. Work out before the fire dies!"),
+                ("Evening approaches without glory", "\(petName) watched the sun arc across the sky without witnessing your strength")
+            ]
+        }
+
+        return messages
     }
 }
 

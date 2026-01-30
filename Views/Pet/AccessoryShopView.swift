@@ -13,98 +13,96 @@ struct AccessoryShopView: View {
     @State private var purchasedAccessory: Accessory?
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Balance header
-                balanceHeader
+        VStack(spacing: 0) {
+            // Header bar
+            headerBar
 
-                // Category tabs
-                categoryTabs
+            // Balance header
+            balanceHeader
 
-                // Accessory grid
-                ScrollView {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                        ForEach(Accessory.accessories(for: selectedCategory), id: \.id) { accessory in
-                            AccessoryCard(
-                                accessory: accessory,
-                                isUnlocked: player.hasUnlocked(accessory),
-                                isEquipped: pet.equippedAccessories.contains(accessory.id),
-                                canAfford: player.essenceCurrency >= accessory.cost,
-                                onTap: {
-                                    handleAccessoryTap(accessory)
-                                }
-                            )
-                        }
+            // Category tabs
+            categoryTabs
+
+            // Accessory grid
+            ScrollView {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: PixelScale.px(2)) {
+                    ForEach(Accessory.accessories(for: selectedCategory), id: \.id) { accessory in
+                        PixelAccessoryCard(
+                            accessory: accessory,
+                            isUnlocked: player.hasUnlocked(accessory),
+                            isEquipped: pet.equippedAccessories.contains(accessory.id),
+                            canAfford: player.essenceCurrency >= accessory.cost,
+                            onTap: {
+                                handleAccessoryTap(accessory)
+                            }
+                        )
                     }
-                    .padding(16)
                 }
+                .padding(PixelScale.px(2))
             }
-            .background(Theme.background)
-            .navigationTitle("Accessory Shop")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Theme.cardBackground, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                    .foregroundColor(Theme.primary)
-                }
-            }
-            .overlay {
-                if showPurchaseSuccess, let accessory = purchasedAccessory {
-                    purchaseSuccessOverlay(accessory: accessory)
-                }
+        }
+        .background(PixelTheme.background)
+        .overlay {
+            if showPurchaseSuccess, let accessory = purchasedAccessory {
+                purchaseSuccessOverlay(accessory: accessory)
             }
         }
     }
 
-    private var balanceHeader: some View {
+    private var headerBar: some View {
         HStack {
-            // Pet preview with accessories
-            ZStack {
-                if let bg = pet.equippedBackground?.backgroundGradient {
-                    Circle()
-                        .fill(bg)
-                        .frame(width: 60, height: 60)
-                } else {
-                    Circle()
-                        .fill(pet.mood.color.opacity(0.2))
-                        .frame(width: 60, height: 60)
-                }
-
-                Image(systemName: pet.evolutionIconName)
-                    .font(.system(size: 28))
-                    .foregroundColor(pet.mood.color)
-
-                // Hat overlay
-                if let hat = pet.equippedHat {
-                    Image(systemName: hat.iconName)
-                        .font(.system(size: 14))
-                        .foregroundColor(hat.rarity.color)
-                        .offset(y: -22)
-                }
+            Button {
+                dismiss()
+            } label: {
+                PixelText("DONE", size: .small, color: PixelTheme.gbLightest)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(pet.name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
+            Spacer()
 
-                HStack(spacing: 2) {
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 12))
-                    Text("\(player.essenceCurrency)")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+            PixelText("ACCESSORY SHOP", size: .medium)
+
+            Spacer()
+
+            // Invisible spacer to center title
+            PixelText("DONE", size: .small, color: .clear)
+        }
+        .padding(.horizontal, PixelScale.px(2))
+        .padding(.vertical, PixelScale.px(2))
+        .background(PixelTheme.gbDark)
+        .pixelOutline()
+    }
+
+    private var balanceHeader: some View {
+        HStack(spacing: PixelScale.px(3)) {
+            // Pet preview with accessories
+            ZStack {
+                Rectangle()
+                    .fill(PixelTheme.cardBackground)
+                    .frame(width: PixelScale.px(15), height: PixelScale.px(15))
+                    .pixelOutline()
+
+                PixelPetDisplay(
+                    pet: pet,
+                    context: .card,
+                    isAnimating: true,
+                    onTap: nil
+                )
+            }
+
+            VStack(alignment: .leading, spacing: PixelScale.px(1)) {
+                PixelText(pet.name, size: .medium)
+
+                HStack(spacing: PixelScale.px(1)) {
+                    PixelIconView(icon: .star, size: 12, color: Color(hex: "FFD700"))
+                    PixelText("\(player.essenceCurrency)", size: .medium, color: Color(hex: "FFD700"))
                 }
-                .foregroundColor(Theme.warning)
             }
 
             Spacer()
         }
-        .padding(16)
-        .background(Theme.cardBackground)
+        .padding(PixelScale.px(2))
+        .background(PixelTheme.cardBackground)
+        .pixelOutline()
     }
 
     private var categoryTabs: some View {
@@ -115,23 +113,34 @@ struct AccessoryShopView: View {
                         selectedCategory = category
                     }
                 } label: {
-                    VStack(spacing: 6) {
-                        Image(systemName: category.iconName)
-                            .font(.system(size: 20))
+                    VStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(
+                            icon: categoryIcon(for: category),
+                            size: 16,
+                            color: selectedCategory == category ? PixelTheme.gbLightest : PixelTheme.textSecondary
+                        )
 
-                        Text(category.displayName)
-                            .font(.system(size: 12, weight: .medium))
+                        PixelText(
+                            category.displayName.uppercased(),
+                            size: .small,
+                            color: selectedCategory == category ? PixelTheme.gbLightest : PixelTheme.textSecondary
+                        )
                     }
-                    .foregroundColor(selectedCategory == category ? Theme.primary : Theme.textSecondary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        selectedCategory == category ? Theme.primary.opacity(0.1) : Color.clear
-                    )
+                    .padding(.vertical, PixelScale.px(2))
+                    .background(selectedCategory == category ? PixelTheme.gbDark : PixelTheme.cardBackground)
                 }
             }
         }
-        .background(Theme.elevated)
+        .pixelOutline()
+    }
+
+    private func categoryIcon(for category: AccessoryCategory) -> PixelIcon {
+        switch category {
+        case .hat: return .star
+        case .background: return .heart
+        case .effect: return .sparkle
+        }
     }
 
     private func handleAccessoryTap(_ accessory: Accessory) {
@@ -165,38 +174,36 @@ struct AccessoryShopView: View {
 
     private func purchaseSuccessOverlay(accessory: Accessory) -> some View {
         ZStack {
-            Theme.background.opacity(0.9)
+            PixelTheme.background.opacity(0.9)
                 .ignoresSafeArea()
 
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(accessory.rarity.color.opacity(0.2))
-                        .frame(width: 100, height: 100)
+            PixelWindow(title: "UNLOCKED!") {
+                VStack(spacing: PixelScale.px(3)) {
+                    ZStack {
+                        Rectangle()
+                            .fill(accessory.rarity.color.opacity(0.2))
+                            .frame(width: PixelScale.px(20), height: PixelScale.px(20))
+                            .pixelOutline()
 
-                    Image(systemName: accessory.iconName)
-                        .font(.system(size: 50))
-                        .foregroundColor(accessory.rarity.color)
+                        Image(systemName: accessory.iconName)
+                            .font(.system(size: 40))
+                            .foregroundColor(accessory.rarity.color)
+                    }
+
+                    PixelText(accessory.name.uppercased(), size: .large)
+
+                    PixelText(accessory.rarity.displayName.uppercased(), size: .small, color: accessory.rarity.color)
                 }
-
-                Text("Unlocked!")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
-
-                Text(accessory.name)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(accessory.rarity.color)
-
-                Text(accessory.rarity.displayName)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.textSecondary)
             }
+            .padding(PixelScale.px(4))
         }
         .transition(.opacity.combined(with: .scale))
     }
 }
 
-struct AccessoryCard: View {
+// MARK: - Pixel Accessory Card
+
+struct PixelAccessoryCard: View {
     let accessory: Accessory
     let isUnlocked: Bool
     let isEquipped: Bool
@@ -205,84 +212,61 @@ struct AccessoryCard: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 8) {
+            VStack(spacing: PixelScale.px(1)) {
                 // Icon
                 ZStack {
-                    Circle()
-                        .fill(isUnlocked ? accessory.rarity.color.opacity(0.2) : Theme.elevated)
-                        .frame(width: 60, height: 60)
+                    Rectangle()
+                        .fill(isUnlocked ? accessory.rarity.color.opacity(0.2) : PixelTheme.gbDark)
+                        .frame(width: PixelScale.px(12), height: PixelScale.px(12))
 
                     Image(systemName: accessory.iconName)
-                        .font(.system(size: 28))
-                        .foregroundColor(isUnlocked ? accessory.rarity.color : Theme.textMuted)
+                        .font(.system(size: 24))
+                        .foregroundColor(isUnlocked ? accessory.rarity.color : PixelTheme.textSecondary)
 
                     // Lock overlay for locked items
                     if !isUnlocked {
-                        Circle()
-                            .fill(Theme.background.opacity(0.5))
-                            .frame(width: 60, height: 60)
+                        Rectangle()
+                            .fill(PixelTheme.background.opacity(0.5))
+                            .frame(width: PixelScale.px(12), height: PixelScale.px(12))
 
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(Theme.textMuted)
+                        PixelIconView(icon: .star, size: 14, color: PixelTheme.textSecondary)
                     }
 
                     // Equipped indicator
                     if isEquipped {
-                        Circle()
-                            .stroke(Theme.success, lineWidth: 3)
-                            .frame(width: 66, height: 66)
+                        Rectangle()
+                            .stroke(Color(hex: "50FF50"), lineWidth: 2)
+                            .frame(width: PixelScale.px(13), height: PixelScale.px(13))
                     }
                 }
+                .pixelOutline()
 
                 // Name
-                Text(accessory.name)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
+                PixelText(accessory.name.uppercased(), size: .small)
                     .lineLimit(1)
 
                 // Rarity badge
-                Text(accessory.rarity.displayName)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(accessory.rarity.color)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(accessory.rarity.color.opacity(0.15))
-                    .cornerRadius(4)
+                PixelText(accessory.rarity.displayName.uppercased(), size: .small, color: accessory.rarity.color)
 
                 // Price or status
                 if isEquipped {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12))
-                        Text("Equipped")
-                            .font(.system(size: 11, weight: .medium))
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .heart, size: 10, color: Color(hex: "50FF50"))
+                        PixelText("EQUIPPED", size: .small, color: Color(hex: "50FF50"))
                     }
-                    .foregroundColor(Theme.success)
                 } else if isUnlocked {
-                    Text("Tap to equip")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(Theme.textSecondary)
+                    PixelText("TAP TO EQUIP", size: .small, color: PixelTheme.textSecondary)
                 } else {
-                    HStack(spacing: 4) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 11))
-                        Text("\(accessory.cost)")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                    HStack(spacing: PixelScale.px(1)) {
+                        PixelIconView(icon: .star, size: 10, color: canAfford ? Color(hex: "FFD700") : PixelTheme.textSecondary)
+                        PixelText("\(accessory.cost)", size: .small, color: canAfford ? Color(hex: "FFD700") : PixelTheme.textSecondary)
                     }
-                    .foregroundColor(canAfford ? Theme.warning : Theme.textMuted)
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isEquipped ? Theme.success.opacity(0.1) : Theme.cardBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(isEquipped ? Theme.success : Color.clear, lineWidth: 2)
-            )
+            .padding(PixelScale.px(2))
+            .background(isEquipped ? Color(hex: "50FF50").opacity(0.1) : PixelTheme.cardBackground)
+            .pixelOutline(color: isEquipped ? Color(hex: "50FF50") : PixelTheme.border)
         }
         .buttonStyle(.plain)
         .disabled(!isUnlocked && !canAfford)

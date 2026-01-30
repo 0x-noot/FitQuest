@@ -64,9 +64,9 @@ struct ContentView: View {
             }
         }
         .onChange(of: player?.hasWorkedOutToday) { _, hasWorkedOut in
-            // Cancel today's notification if user has worked out
+            // Cancel today's guilt notifications if user has worked out
             if let worked = hasWorkedOut, worked {
-                NotificationManager.shared.cancelTodayReminderIfWorkedOut(hasWorkedOutToday: true)
+                NotificationManager.shared.cancelTodayGuiltNotifications()
             }
         }
     }

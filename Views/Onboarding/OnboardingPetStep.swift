@@ -51,10 +51,11 @@ struct OnboardingPetStep: View {
                         // Show selected pet with pixel sprite
                         PixelPanel(title: species.displayName.uppercased()) {
                             VStack(spacing: PixelScale.px(2)) {
-                                // Pet sprite preview
+                                // Pet sprite preview with species colors
                                 PixelSpriteView(
                                     sprite: PetSpriteLibrary.sprite(for: species, stage: .baby),
-                                    pixelSize: 4
+                                    pixelSize: 4,
+                                    palette: PixelTheme.PetPalette.palette(for: species)
                                 )
                                 .frame(width: 64, height: 64)
 
@@ -128,10 +129,11 @@ struct PixelPetSelectionCard: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: PixelScale.px(2)) {
-                // Pet sprite preview
+                // Pet sprite preview with species colors
                 PixelSpriteView(
                     sprite: PetSpriteLibrary.sprite(for: species, stage: .baby),
-                    pixelSize: 2
+                    pixelSize: 2,
+                    palette: PixelTheme.PetPalette.palette(for: species)
                 )
                 .frame(width: 32, height: 32)
 

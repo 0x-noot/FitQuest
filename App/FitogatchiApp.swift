@@ -6,8 +6,9 @@ import UIKit
 @main
 struct FitogatchiApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @State private var modelContainerError: Error?
 
-    var sharedModelContainer: ModelContainer = {
+    var sharedModelContainer: ModelContainer? = {
         let schema = Schema([
             Player.self,
             Workout.self,
@@ -20,16 +21,47 @@ struct FitogatchiApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            return nil
         }
     }()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .preferredColorScheme(.dark)
+            if let container = sharedModelContainer {
+                ContentView()
+                    .preferredColorScheme(.dark)
+                    .modelContainer(container)
+            } else {
+                DatabaseErrorView()
+                    .preferredColorScheme(.dark)
+            }
         }
-        .modelContainer(sharedModelContainer)
+    }
+}
+
+// MARK: - Database Error View
+
+struct DatabaseErrorView: View {
+    var body: some View {
+        VStack(spacing: PixelScale.px(4)) {
+            PixelIconView(icon: .star, size: 48, color: Color(hex: "FF5555"))
+
+            PixelText("OOPS!", size: .xlarge)
+
+            PixelText("UNABLE TO LOAD DATA", size: .medium, color: PixelTheme.textSecondary)
+
+            VStack(spacing: PixelScale.px(2)) {
+                PixelText("TRY THESE STEPS:", size: .small, color: PixelTheme.textSecondary)
+                PixelText("1. CLOSE THE APP", size: .small, color: PixelTheme.textSecondary)
+                PixelText("2. RESTART YOUR DEVICE", size: .small, color: PixelTheme.textSecondary)
+                PixelText("3. REOPEN FITQUEST", size: .small, color: PixelTheme.textSecondary)
+            }
+            .padding(PixelScale.px(3))
+            .background(PixelTheme.cardBackground)
+            .pixelOutline()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(PixelTheme.background)
     }
 }
 

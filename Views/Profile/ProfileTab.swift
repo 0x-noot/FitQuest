@@ -9,6 +9,11 @@ struct ProfileTab: View {
 
     @State private var isEditingName = false
     @State private var editedName: String = ""
+    @State private var showPermissionDeniedAlert = false
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
 
     var body: some View {
         VStack(spacing: PixelScale.px(2)) {
@@ -43,10 +48,11 @@ struct ProfileTab: View {
         PixelPanel(title: "PET") {
             if let pet = player.pet {
                 HStack(spacing: PixelScale.px(3)) {
-                    // Small pet sprite
+                    // Small pet sprite with species colors
                     PixelSpriteView(
                         sprite: PetSpriteLibrary.sprite(for: pet.species, stage: pet.evolutionStage),
-                        pixelSize: 3
+                        pixelSize: 3,
+                        palette: PixelTheme.PetPalette.palette(for: pet.species)
                     )
                     .frame(width: 48, height: 48)
 
@@ -114,10 +120,20 @@ struct ProfileTab: View {
                 HStack {
                     PixelText("VERSION", size: .small, color: PixelTheme.textSecondary)
                     Spacer()
-                    PixelText("2.0.0", size: .small, color: PixelTheme.textSecondary)
+                    PixelText(appVersion, size: .small, color: PixelTheme.textSecondary)
                 }
                 .padding(.top, PixelScale.px(1))
             }
+        }
+        .alert("Notifications Disabled", isPresented: $showPermissionDeniedAlert) {
+            Button("Open Settings") {
+                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(settingsURL)
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Please enable notifications in Settings to receive workout reminders and pet updates.")
         }
     }
 
@@ -125,15 +141,42 @@ struct ProfileTab: View {
 
     private func handleNotificationToggle(_ enabled: Bool) async {
         if enabled {
+            // Check current authorization status first
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+
+            if settings.authorizationStatus == .denied {
+                // Permission was previously denied - show alert to open Settings
+                await MainActor.run {
+                    showPermissionDeniedAlert = true
+                }
+                return
+            }
+
             let granted = await NotificationManager.shared.requestAuthorization()
             if granted {
                 player.notificationsEnabled = true
-                NotificationManager.shared.scheduleDailyReminder()
+
+                // Schedule guilt notifications if user has pet and hasn't worked out today
+                if let pet = player.pet, !player.hasWorkedOutToday {
+                    NotificationManager.shared.scheduleGuiltReminders(pet: pet)
+                }
+
+                // Schedule pet happiness notifications
+                if let pet = player.pet {
+                    NotificationManager.shared.schedulePetNotifications(for: pet)
+                }
+
                 try? modelContext.save()
+            } else {
+                // User denied the permission request
+                await MainActor.run {
+                    showPermissionDeniedAlert = true
+                }
             }
         } else {
             player.notificationsEnabled = false
-            NotificationManager.shared.cancelDailyReminder()
+            NotificationManager.shared.cancelGuiltReminders()
+            NotificationManager.shared.cancelPetNotifications()
             try? modelContext.save()
         }
     }

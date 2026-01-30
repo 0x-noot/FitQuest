@@ -8,7 +8,6 @@ struct PixelPetDisplay: View {
     let context: SpriteContext
     let isAnimating: Bool
     let onTap: (() -> Void)?
-    let onLongPress: (() -> Void)?
 
     @State private var bounceOffset: CGFloat = 0
 
@@ -16,14 +15,12 @@ struct PixelPetDisplay: View {
         pet: Pet,
         context: SpriteContext = .home,
         isAnimating: Bool = true,
-        onTap: (() -> Void)? = nil,
-        onLongPress: (() -> Void)? = nil
+        onTap: (() -> Void)? = nil
     ) {
         self.pet = pet
         self.context = context
         self.isAnimating = isAnimating
         self.onTap = onTap
-        self.onLongPress = onLongPress
     }
 
     private var pixelSize: CGFloat {
@@ -38,10 +35,42 @@ struct PixelPetDisplay: View {
         )
     }
 
+    /// Species-specific color palette for vibrant pets
+    private var petPalette: PixelTheme.PetPalette {
+        PixelTheme.PetPalette.palette(for: pet.species)
+    }
+
     var body: some View {
         VStack(spacing: PixelScale.px(2)) {
             // Pet sprite with animation
             ZStack {
+                // Glow aura effect (species-colored) - enhanced for visibility
+                if !pet.isAway {
+                    // Outer soft glow
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [petPalette.fill.opacity(0.5), petPalette.fill.opacity(0.2), Color.clear],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 16 * pixelSize * 0.9
+                            )
+                        )
+                        .frame(width: 16 * pixelSize * 1.6, height: 16 * pixelSize * 1.6)
+
+                    // Inner bright glow for more pop
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [petPalette.highlight.opacity(0.4), petPalette.fill.opacity(0.15), Color.clear],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 16 * pixelSize * 0.5
+                            )
+                        )
+                        .frame(width: 16 * pixelSize * 1.2, height: 16 * pixelSize * 1.2)
+                }
+
                 // Background panel
                 Rectangle()
                     .fill(PixelTheme.cardBackground)
@@ -51,37 +80,29 @@ struct PixelPetDisplay: View {
                     )
                     .pixelOutline()
 
-                // Animated sprite
+                // Animated sprite with species-specific colors
                 AnimatedSpriteView(
                     animation: animation,
                     pixelSize: pixelSize,
-                    isAnimating: isAnimating && !pet.isAway
+                    isAnimating: isAnimating && !pet.isAway,
+                    palette: petPalette
                 )
                 .opacity(pet.isAway ? 0.5 : 1.0)
                 .offset(y: bounceOffset)
             }
             .contentShape(Rectangle())
-            .highPriorityGesture(
-                TapGesture()
-                    .onEnded {
-                        // Bounce effect
-                        withAnimation(.easeOut(duration: 0.1)) {
-                            bounceOffset = -PixelScale.px(2)
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            withAnimation(.easeIn(duration: 0.1)) {
-                                bounceOffset = 0
-                            }
-                        }
-                        onTap?()
+            .onTapGesture {
+                // Bounce effect
+                withAnimation(.easeOut(duration: 0.1)) {
+                    bounceOffset = -PixelScale.px(2)
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeIn(duration: 0.1)) {
+                        bounceOffset = 0
                     }
-            )
-            .gesture(
-                LongPressGesture(minimumDuration: 0.5)
-                    .onEnded { _ in
-                        onLongPress?()
-                    }
-            )
+                }
+                onTap?()
+            }
 
             // Pet info bar
             if context == .home || context == .detail {
@@ -183,6 +204,8 @@ struct PixelSpeechBubble: View {
     let text: String
     @Binding var isVisible: Bool
 
+    @State private var dismissTask: DispatchWorkItem?
+
     var body: some View {
         VStack(spacing: 0) {
             // Bubble content
@@ -207,13 +230,28 @@ struct PixelSpeechBubble: View {
             }
         }
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                isVisible = false
-            }
+            scheduleDismiss()
+        }
+        .onChange(of: text) { _, _ in
+            // Reset dismiss timer when text changes
+            scheduleDismiss()
         }
         .onTapGesture {
+            dismissTask?.cancel()
             isVisible = false
         }
+    }
+
+    private func scheduleDismiss() {
+        // Cancel any existing dismiss task
+        dismissTask?.cancel()
+
+        // Schedule new dismiss after 4 seconds
+        let task = DispatchWorkItem { [self] in
+            isVisible = false
+        }
+        dismissTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0, execute: task)
     }
 }
 

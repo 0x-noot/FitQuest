@@ -18,7 +18,8 @@ struct OnboardingCompleteStep: View {
                 VStack(spacing: PixelScale.px(2)) {
                     PixelSpriteView(
                         sprite: PetSpriteLibrary.sprite(for: species, stage: .baby),
-                        pixelSize: 5
+                        pixelSize: 5,
+                        palette: PixelTheme.PetPalette.palette(for: species)
                     )
                     .frame(width: 80, height: 80)
                     .padding(PixelScale.px(3))

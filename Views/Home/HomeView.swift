@@ -20,6 +20,7 @@ struct HomeTab: View {
     @State private var showHeartParticles = false
     @State private var showPlaySessionComplete = false
     @State private var playSessionsRemaining = 0
+    @State private var currentTapCount = 0  // Local tap tracking for current session
 
     // Evolution state
     @State private var showEvolution = false
@@ -58,16 +59,16 @@ struct HomeTab: View {
                 actionButtonsRow
                     .padding(.horizontal, PixelScale.px(2))
 
-                // Daily quests panel
+                // Quote of the day
+                quoteSection
+                    .padding(.horizontal, PixelScale.px(2))
+
+                // Daily quests panel (at bottom)
                 if !player.dailyQuests.isEmpty {
                     questsSection
                         .padding(.horizontal, PixelScale.px(2))
+                        .padding(.bottom, PixelScale.px(2))
                 }
-
-                // Quote of the day - moved to bottom as a nice footer
-                quoteSection
-                    .padding(.horizontal, PixelScale.px(2))
-                    .padding(.bottom, PixelScale.px(2))
             }
         }
         .background(PixelTheme.background)
@@ -122,6 +123,11 @@ struct HomeTab: View {
                 PetManager.resetPlaySessionsIfNeeded(pet: pet)
 
                 if player.notificationsEnabled {
+                    // Refresh guilt notifications based on workout status
+                    NotificationManager.shared.refreshGuiltNotifications(
+                        pet: pet,
+                        hasWorkedOutToday: player.hasWorkedOutToday
+                    )
                     NotificationManager.shared.schedulePetNotifications(for: pet)
                 }
 
@@ -138,6 +144,11 @@ struct HomeTab: View {
                     PetManager.resetPlaySessionsIfNeeded(pet: pet)
 
                     if player.notificationsEnabled {
+                        // Refresh guilt notifications based on workout status
+                        NotificationManager.shared.refreshGuiltNotifications(
+                            pet: pet,
+                            hasWorkedOutToday: player.hasWorkedOutToday
+                        )
                         NotificationManager.shared.schedulePetNotifications(for: pet)
                     }
 
@@ -170,8 +181,7 @@ struct HomeTab: View {
                         pet: pet,
                         context: .home,
                         isAnimating: true,
-                        onTap: { handlePetTap(pet: pet) },
-                        onLongPress: { showPetDetail = true }
+                        onTap: { handlePetTap(pet: pet) }
                     )
 
                     // Play hint
@@ -317,18 +327,43 @@ struct HomeTab: View {
     // MARK: - Pet Interaction
 
     private func handlePetTap(pet: Pet) {
-        let result = PetManager.handlePetTap(pet: pet)
+        // Guard: pet must not be away
+        guard !pet.isAway else {
+            showPetDetail = true
+            return
+        }
 
-        switch result {
-        case .tapRegistered:
-            if player.soundEffectsEnabled {
-                let impact = UIImpactFeedbackGenerator(style: .light)
-                impact.impactOccurred()
-            }
-            try? modelContext.save()
+        // Reset sessions if new day
+        PetManager.resetPlaySessionsIfNeeded(pet: pet)
 
-        case .sessionComplete(let remaining):
-            playSessionsRemaining = remaining
+        // Guard: must have sessions remaining
+        guard pet.playSessionsToday < Pet.maxPlaySessionsPerDay else {
+            dialogueText = "ALL DONE FOR TODAY!"
+            showDialogue = true
+            return
+        }
+
+        // Haptic feedback for tap
+        if player.soundEffectsEnabled {
+            let impact = UIImpactFeedbackGenerator(style: .light)
+            impact.impactOccurred()
+        }
+
+        // Increment local tap count
+        currentTapCount += 1
+
+        // Check if session complete (3 taps)
+        if currentTapCount >= Pet.tapsPerSession {
+            // Complete the session
+            currentTapCount = 0
+            pet.playSessionsToday += 1
+            pet.lastPlayDate = Date()
+
+            // Add happiness
+            PetManager.modifyHappiness(pet: pet, amount: Pet.happinessPerSession)
+
+            // Update UI
+            playSessionsRemaining = Pet.maxPlaySessionsPerDay - pet.playSessionsToday
             showPlaySessionComplete = true
 
             if player.soundEffectsEnabled {
@@ -344,12 +379,6 @@ struct HomeTab: View {
             }
 
             try? modelContext.save()
-
-        case .noSessionsRemaining:
-            break
-
-        case .petIsAway:
-            showPetDetail = true
         }
     }
 
@@ -511,6 +540,8 @@ struct HomeTab: View {
         checkQuestProgress(workout: workout)
 
         if player.notificationsEnabled {
+            // Cancel guilt notifications since user worked out
+            NotificationManager.shared.cancelTodayGuiltNotifications()
             NotificationManager.shared.cancelTodayPetNotifications()
         }
 
@@ -531,6 +562,10 @@ struct PixelLevelUpView: View {
     let level: Int
     let onDismiss: () -> Void
 
+    private var petPalette: PixelTheme.PetPalette {
+        PixelTheme.PetPalette.palette(for: species)
+    }
+
     var body: some View {
         ZStack {
             PixelTheme.background
@@ -539,10 +574,11 @@ struct PixelLevelUpView: View {
             VStack(spacing: PixelScale.px(4)) {
                 Spacer()
 
-                // Pet sprite (large)
+                // Pet sprite (large) with species colors
                 PixelSpriteView(
                     sprite: PetSpriteLibrary.sprite(for: species, stage: EvolutionStage.from(level: level)),
-                    pixelSize: 8
+                    pixelSize: 8,
+                    palette: petPalette
                 )
 
                 PixelText("LEVEL UP!", size: .xlarge)
@@ -571,6 +607,10 @@ struct PixelEvolutionView: View {
     let newStage: EvolutionStage
     let onDismiss: () -> Void
 
+    private var petPalette: PixelTheme.PetPalette {
+        PixelTheme.PetPalette.palette(for: species)
+    }
+
     var body: some View {
         ZStack {
             PixelTheme.background
@@ -579,10 +619,11 @@ struct PixelEvolutionView: View {
             VStack(spacing: PixelScale.px(4)) {
                 Spacer()
 
-                // Pet sprite (large)
+                // Pet sprite (large) with species colors
                 PixelSpriteView(
                     sprite: PetSpriteLibrary.sprite(for: species, stage: newStage),
-                    pixelSize: 10
+                    pixelSize: 10,
+                    palette: petPalette
                 )
 
                 PixelText("EVOLUTION!", size: .xlarge)

@@ -1,5 +1,10 @@
 import SwiftUI
 
+// MARK: - Legacy Quest Card
+// NOTE: This component is deprecated and not used in the app.
+// The app uses PixelQuestRow from PixelCheckbox.swift instead.
+// Kept for reference only.
+
 struct DailyQuestCard: View {
     let quest: DailyQuest
     let onClaim: () -> Void

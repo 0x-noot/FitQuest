@@ -10,6 +10,7 @@ enum PixelShade: Int {
     case dark = 3        // gbDark - shadows
     case darkest = 4     // gbDarkest - outlines
 
+    /// Default color using the theme palette
     var color: Color {
         switch self {
         case .transparent: return .clear
@@ -17,6 +18,18 @@ enum PixelShade: Int {
         case .light: return PixelTheme.gbLight
         case .dark: return PixelTheme.gbDark
         case .darkest: return PixelTheme.gbDarkest
+        }
+    }
+
+    /// Get color using a species-specific palette
+    func color(for palette: PixelTheme.PetPalette?) -> Color {
+        guard let palette = palette else { return color }
+        switch self {
+        case .transparent: return .clear
+        case .lightest: return palette.highlight
+        case .light: return palette.fill
+        case .dark: return palette.shadow
+        case .darkest: return palette.outline
         }
     }
 
@@ -132,6 +145,13 @@ struct SpriteAnimation {
 struct PixelSpriteView: View {
     let sprite: PixelSprite
     let pixelSize: CGFloat
+    let palette: PixelTheme.PetPalette?
+
+    init(sprite: PixelSprite, pixelSize: CGFloat, palette: PixelTheme.PetPalette? = nil) {
+        self.sprite = sprite
+        self.pixelSize = pixelSize
+        self.palette = palette
+    }
 
     var body: some View {
         Canvas { context, _ in
@@ -145,7 +165,7 @@ struct PixelSpriteView: View {
                             width: pixelSize,
                             height: pixelSize
                         )
-                        context.fill(Path(rect), with: .color(shade.color))
+                        context.fill(Path(rect), with: .color(shade.color(for: palette)))
                     }
                 }
             }
@@ -164,14 +184,22 @@ struct AnimatedSpriteView: View {
     let animation: SpriteAnimation
     let pixelSize: CGFloat
     let isAnimating: Bool
+    let palette: PixelTheme.PetPalette?
 
     @State private var frameIndex = 0
     @State private var timer: Timer?
 
+    init(animation: SpriteAnimation, pixelSize: CGFloat, isAnimating: Bool, palette: PixelTheme.PetPalette? = nil) {
+        self.animation = animation
+        self.pixelSize = pixelSize
+        self.isAnimating = isAnimating
+        self.palette = palette
+    }
+
     var body: some View {
         let frame = animation.frames[frameIndex]
 
-        PixelSpriteView(sprite: frame.sprite, pixelSize: pixelSize)
+        PixelSpriteView(sprite: frame.sprite, pixelSize: pixelSize, palette: palette)
             .offset(x: frame.xOffset * pixelSize, y: frame.yOffset * pixelSize)
             .onAppear {
                 startAnimation()

@@ -35,13 +35,12 @@ struct Theme {
     static let cardBackground = PixelTheme.cardBackground
     static let elevated = PixelTheme.elevated
 
-    // MARK: - Accents (Mapped to Game Boy shades)
-    // In the Game Boy palette, we use different shades for emphasis
-    static let primary = PixelTheme.gbDarkest      // Primary actions
-    static let secondary = PixelTheme.gbDark       // Secondary actions
-    static let success = PixelTheme.gbDarkest      // Success states
-    static let warning = PixelTheme.gbDark         // Warning states
-    static let streak = PixelTheme.gbDarkest       // Streak indicators
+    // MARK: - Accents (Semantic colors for UI feedback)
+    static let primary = PixelTheme.gbLightest     // Primary actions
+    static let secondary = PixelTheme.gbLight      // Secondary actions
+    static let success = Color(hex: "50FF50")      // Green - success states
+    static let warning = Color(hex: "FFD700")      // Gold - warning states
+    static let streak = Color(hex: "FF6B6B")       // Coral - streak indicators
 
     // MARK: - Text
     static let textPrimary = PixelTheme.text

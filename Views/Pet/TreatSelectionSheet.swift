@@ -47,7 +47,8 @@ struct TreatSelectionSheet: View {
                         VStack(spacing: PixelScale.px(2)) {
                             PixelSpriteView(
                                 sprite: PetSpriteLibrary.sprite(for: pet.species, stage: pet.evolutionStage),
-                                pixelSize: 4
+                                pixelSize: 4,
+                                palette: PixelTheme.PetPalette.palette(for: pet.species)
                             )
                             .frame(width: 64, height: 64)
 

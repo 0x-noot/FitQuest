@@ -113,10 +113,11 @@ struct PetDetailView: View {
     private var petDisplaySection: some View {
         PixelPanel(title: "YOUR PET") {
             VStack(spacing: PixelScale.px(2)) {
-                // Pixel pet sprite
+                // Pixel pet sprite with species colors
                 PixelSpriteView(
                     sprite: PetSpriteLibrary.sprite(for: pet.species, stage: pet.evolutionStage),
-                    pixelSize: 5
+                    pixelSize: 5,
+                    palette: PixelTheme.PetPalette.palette(for: pet.species)
                 )
                 .frame(width: 80, height: 80)
 
