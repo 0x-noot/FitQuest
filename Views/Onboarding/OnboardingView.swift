@@ -16,9 +16,9 @@ struct OnboardingView: View {
     @State private var petName: String = ""
 
     private var totalSteps: Int {
-        // Base steps: Welcome, Goals, Level, Style, Weekly Goal, Equipment, Pet, Complete = 8
-        // Focus step only shows if "Build muscle" is selected = 9
-        selectedGoals.contains(.buildMuscle) ? 9 : 8
+        // Base steps: Welcome, Auth, Goals, Level, Style, Weekly Goal, Equipment, Pet, Complete = 9
+        // Focus step only shows if "Build muscle" is selected = 10
+        selectedGoals.contains(.buildMuscle) ? 10 : 9
     }
 
     private var showFocusStep: Bool {
@@ -70,32 +70,37 @@ struct OnboardingView: View {
                 onContinue: { goToNextStep() }
             )
         case 1:
+            OnboardingAuthStep(
+                player: player,
+                onComplete: { goToNextStep() }
+            )
+        case 2:
             OnboardingGoalsStep(
                 selectedGoals: $selectedGoals,
                 onContinue: { goToNextStep() }
             )
-        case 2:
+        case 3:
             OnboardingLevelStep(
                 selectedLevel: $selectedLevel,
                 onContinue: { goToNextStep() }
             )
-        case 3:
+        case 4:
             OnboardingStyleStep(
                 selectedStyle: $selectedStyle,
                 onContinue: { goToNextStep() }
             )
-        case 4:
+        case 5:
             OnboardingWeeklyGoalStep(
                 weeklyGoal: $weeklyGoal,
                 onContinue: { goToNextStep() }
             )
-        case 5:
+        case 6:
             OnboardingEquipmentStep(
                 selectedEquipment: $selectedEquipment,
                 onContinue: { goToNextStep() },
                 onSkip: { goToNextStep() }
             )
-        case 6:
+        case 7:
             if showFocusStep {
                 OnboardingFocusStep(
                     selectedAreas: $selectedFocusAreas,
@@ -108,7 +113,7 @@ struct OnboardingView: View {
                     onContinue: { goToNextStep() }
                 )
             }
-        case 7:
+        case 8:
             if showFocusStep {
                 OnboardingPetStep(
                     selectedSpecies: $selectedPetSpecies,
@@ -124,7 +129,7 @@ struct OnboardingView: View {
                     onComplete: { completeOnboarding() }
                 )
             }
-        case 8:
+        case 9:
             OnboardingCompleteStep(
                 playerName: "",
                 petSpecies: selectedPetSpecies,

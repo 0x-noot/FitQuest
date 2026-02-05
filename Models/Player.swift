@@ -3,52 +3,64 @@ import Foundation
 
 @Model
 final class Player {
-    var id: UUID
-    var name: String
-    var currentStreak: Int
-    var highestStreak: Int
+    var id: UUID = UUID()
+    var name: String = "Player"
+    var currentStreak: Int = 0
+    var highestStreak: Int = 0
     var lastWorkoutDate: Date?
-    var createdAt: Date
+    var createdAt: Date = Date()
 
     // Preferences
-    var notificationsEnabled: Bool
-    var soundEffectsEnabled: Bool
+    var notificationsEnabled: Bool = false
+    var soundEffectsEnabled: Bool = true
 
     // Rest days (streak protection)
-    var restDaysUsedThisWeek: Int
-    var lastRestDayReset: Date
+    var restDaysUsedThisWeek: Int = 0
+    var lastRestDayReset: Date = Date()
 
     // Onboarding
-    var hasCompletedOnboarding: Bool
-    var fitnessGoalsRaw: String
-    var fitnessLevelRaw: String
-    var workoutStyleRaw: String
-    var equipmentAccessRaw: String
-    var focusAreasRaw: String
+    var hasCompletedOnboarding: Bool = false
+    var fitnessGoalsRaw: String = ""
+    var fitnessLevelRaw: String = ""
+    var workoutStyleRaw: String = ""
+    var equipmentAccessRaw: String = ""
+    var focusAreasRaw: String = ""
 
     // Weekly streak system
-    var weeklyWorkoutGoal: Int
-    var currentWeeklyStreak: Int
-    var highestWeeklyStreak: Int
+    var weeklyWorkoutGoal: Int = 3
+    var currentWeeklyStreak: Int = 0
+    var highestWeeklyStreak: Int = 0
     var lastWeekCompleted: Date?
-    var daysWorkedOutThisWeek: Int
-    var lastWeeklyStreakReset: Date
+    var daysWorkedOutThisWeek: Int = 0
+    var lastWeeklyStreakReset: Date = Date()
 
     @Relationship(deleteRule: .cascade, inverse: \Workout.player)
-    var workouts: [Workout] = []
+    var workouts: [Workout]? = []
 
     // Pet system - now the central focus
-    var essenceCurrency: Int
+    var essenceCurrency: Int = 0
     @Relationship(deleteRule: .cascade, inverse: \Pet.player)
     var pet: Pet?
 
     // Daily quests system
     var lastQuestRefresh: Date?
-    @Relationship(deleteRule: .cascade)
-    var dailyQuests: [DailyQuest] = []
+    @Relationship(deleteRule: .cascade, inverse: \DailyQuest.player)
+    var dailyQuests: [DailyQuest]? = []
 
     // Accessory system
-    var unlockedAccessoriesRaw: String  // Comma-separated accessory IDs
+    var unlockedAccessoriesRaw: String = ""  // Comma-separated accessory IDs
+
+    // Authentication & CloudKit
+    var appleUserID: String?
+    var cloudKitRecordName: String?
+    var displayName: String?
+
+    // Clubs system
+    @Relationship(deleteRule: .cascade, inverse: \Club.player)
+    var clubs: [Club]? = []
+
+    @Relationship(deleteRule: .cascade, inverse: \AuthState.player)
+    var authState: AuthState?
 
     var unlockedAccessories: [String] {
         get {
@@ -83,7 +95,7 @@ final class Player {
     var workoutsThisWeek: [Workout] {
         let calendar = Calendar.current
         let startOfWeek = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) ?? Date()
-        return workouts.filter { $0.completedAt >= startOfWeek }
+        return (workouts ?? []).filter { $0.completedAt >= startOfWeek }
     }
 
     var xpThisWeek: Int {
@@ -190,6 +202,33 @@ final class Player {
 
         // Accessory system defaults
         self.unlockedAccessoriesRaw = ""
+
+        // Auth defaults
+        self.appleUserID = nil
+        self.cloudKitRecordName = nil
+        self.displayName = nil
+    }
+
+    // MARK: - Authentication Helpers
+
+    var isAuthenticated: Bool {
+        authState?.isAuthenticated ?? false
+    }
+
+    var effectiveDisplayName: String {
+        displayName ?? (name.isEmpty ? "Player" : name)
+    }
+
+    var clubCount: Int {
+        (clubs ?? []).count
+    }
+
+    var canJoinMoreClubs: Bool {
+        ClubManager.canJoinClub(currentClubCount: clubCount)
+    }
+
+    var canCreateMoreClubs: Bool {
+        ClubManager.canCreateClub(currentClubCount: clubCount)
     }
 
     /// Update streak after completing a workout
@@ -299,7 +338,7 @@ final class Player {
 
     /// Get today's workouts
     var todaysWorkouts: [Workout] {
-        workouts.filter { StreakManager.isSameDay($0.completedAt, Date()) }
+        (workouts ?? []).filter { StreakManager.isSameDay($0.completedAt, Date()) }
     }
 
     /// Get total XP earned today (pet's XP from today's workouts)

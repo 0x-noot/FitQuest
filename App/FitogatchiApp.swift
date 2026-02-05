@@ -14,13 +14,18 @@ struct FitogatchiApp: App {
             Workout.self,
             WorkoutTemplate.self,
             Pet.self,
-            DailyQuest.self
+            DailyQuest.self,
+            AuthState.self,
+            Club.self,
+            ClubActivity.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
+            print("❌ Failed to create ModelContainer: \(error)")
+            print("❌ Error details: \(error.localizedDescription)")
             return nil
         }
     }()

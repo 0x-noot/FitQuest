@@ -3,20 +3,24 @@ import Foundation
 
 @Model
 final class WorkoutTemplate {
-    var id: UUID
-    var name: String
-    var workoutTypeRaw: String
+    var id: UUID = UUID()
+    var name: String = ""
+    var workoutTypeRaw: String = "strength"
     var muscleGroupRaw: String?
-    var isCustom: Bool
-    var iconName: String
-    var baseXP: Int
-    var createdAt: Date
+    var isCustom: Bool = false
+    var iconName: String = "figure.walk"
+    var baseXP: Int = 50
+    var createdAt: Date = Date()
 
     // Default values for quick entry
     var defaultWeight: Double?
     var defaultReps: Int?
     var defaultSets: Int?
     var defaultDuration: Int?
+
+    // Inverse relationship for CloudKit
+    @Relationship(deleteRule: .nullify)
+    var workouts: [Workout]? = []
 
     var workoutType: WorkoutType {
         get { WorkoutType(rawValue: workoutTypeRaw) ?? .strength }

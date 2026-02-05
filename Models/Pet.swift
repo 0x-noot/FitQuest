@@ -3,22 +3,22 @@ import SwiftData
 
 @Model
 final class Pet {
-    var id: UUID
-    var name: String
-    var speciesRaw: String
-    var totalXP: Int  // XP-based leveling (replaces Essence-based)
-    var happiness: Double  // 0-100
-    var isAway: Bool
+    var id: UUID = UUID()
+    var name: String = ""
+    var speciesRaw: String = "dragon"
+    var totalXP: Int = 0  // XP-based leveling (replaces Essence-based)
+    var happiness: Double = 100.0  // 0-100
+    var isAway: Bool = false
     var awayDate: Date?
-    var lastHappinessUpdateDate: Date
+    var lastHappinessUpdateDate: Date = Date()
 
     // Play interaction tracking
-    var playSessionsToday: Int
+    var playSessionsToday: Int = 0
     var lastPlayDate: Date?
-    var tapCount: Int  // Tracks taps within a play session
+    var tapCount: Int = 0  // Tracks taps within a play session
 
     // Equipped accessories (stored as comma-separated IDs)
-    var equippedAccessoriesRaw: String
+    var equippedAccessoriesRaw: String = ""
 
     var player: Player?
 

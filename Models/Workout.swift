@@ -3,11 +3,11 @@ import Foundation
 
 @Model
 final class Workout {
-    var id: UUID
-    var name: String
-    var workoutTypeRaw: String
-    var completedAt: Date
-    var xpEarned: Int
+    var id: UUID = UUID()
+    var name: String = ""
+    var workoutTypeRaw: String = "strength"
+    var completedAt: Date = Date()
+    var xpEarned: Int = 0
 
     // Strength training fields
     var weight: Double?
@@ -25,6 +25,7 @@ final class Workout {
 
     // Relationships
     var player: Player?
+    @Relationship(inverse: \WorkoutTemplate.workouts)
     var template: WorkoutTemplate?
 
     var workoutType: WorkoutType {

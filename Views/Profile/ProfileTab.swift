@@ -10,6 +10,9 @@ struct ProfileTab: View {
     @State private var isEditingName = false
     @State private var editedName: String = ""
     @State private var showPermissionDeniedAlert = false
+    @State private var showSignOutConfirm = false
+
+    @StateObject private var authManager = AuthManager.shared
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -31,6 +34,10 @@ struct ProfileTab: View {
 
             // Stats section
             statsSection
+                .padding(.horizontal, PixelScale.px(2))
+
+            // Account section
+            accountSection
                 .padding(.horizontal, PixelScale.px(2))
 
             // Settings section
@@ -86,12 +93,73 @@ struct ProfileTab: View {
                 PixelStatRow(icon: .flame, label: "STREAK", value: "\(player.currentStreak)")
                 PixelStatRow(icon: .trophy, label: "BEST", value: "\(player.highestStreak)")
                 PixelStatRow(icon: .sparkle, label: "ESSENCE", value: "\(player.essenceCurrency)")
-                PixelStatRow(icon: .dumbbell, label: "WORKOUTS", value: "\(player.workouts.count)")
+                PixelStatRow(icon: .dumbbell, label: "WORKOUTS", value: "\((player.workouts ?? []).count)")
 
                 if let pet = player.pet {
                     PixelStatRow(icon: .bolt, label: "PET XP", value: "\(pet.totalXP)")
                 }
             }
+        }
+    }
+
+    // MARK: - Account Section
+
+    private var accountSection: some View {
+        PixelPanel(title: "ACCOUNT") {
+            VStack(spacing: PixelScale.px(1)) {
+                if player.isAuthenticated {
+                    // Signed in state
+                    HStack(spacing: PixelScale.px(2)) {
+                        PixelIconView(icon: .check, size: 12, color: Color(hex: "4ECDC4"))
+                        PixelText("SIGNED IN", size: .small, color: Color(hex: "4ECDC4"))
+                        Spacer()
+                        PixelIconView(icon: .person, size: 12)
+                    }
+
+                    if let displayName = player.displayName, !displayName.isEmpty {
+                        HStack {
+                            PixelText("NAME", size: .small, color: PixelTheme.textSecondary)
+                            Spacer()
+                            PixelText(displayName.uppercased(), size: .small)
+                        }
+                    }
+
+                    HStack {
+                        PixelText("CLUBS", size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                        PixelText("\(player.clubCount)/\(ClubManager.maxClubsPerUser)", size: .small)
+                    }
+
+                    // Sign out button
+                    Button(action: { showSignOutConfirm = true }) {
+                        HStack {
+                            PixelText("SIGN OUT", size: .small, color: Color(hex: "FF5555"))
+                            Spacer()
+                            PixelIconView(icon: .arrow, size: 12, color: Color(hex: "FF5555"))
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, PixelScale.px(1))
+                } else {
+                    // Not signed in state
+                    HStack(spacing: PixelScale.px(2)) {
+                        PixelIconView(icon: .person, size: 12, color: PixelTheme.textSecondary)
+                        PixelText("NOT SIGNED IN", size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
+
+                    PixelText("SIGN IN TO SYNC DATA", size: .small, color: PixelTheme.textSecondary)
+                    PixelText("AND JOIN CLUBS", size: .small, color: PixelTheme.textSecondary)
+                }
+            }
+        }
+        .alert("Sign Out?", isPresented: $showSignOutConfirm) {
+            Button("Cancel", role: .cancel) { }
+            Button("Sign Out", role: .destructive) {
+                signOut()
+            }
+        } message: {
+            Text("Your local data will be kept, but you won't be able to sync or use clubs until you sign in again.")
         }
     }
 
@@ -180,6 +248,21 @@ struct ProfileTab: View {
             try? modelContext.save()
         }
     }
+
+    // MARK: - Sign Out Handler
+
+    private func signOut() {
+        authManager.signOut()
+
+        if let authState = player.authState {
+            authState.signOut()
+        }
+
+        player.appleUserID = nil
+        player.cloudKitRecordName = nil
+
+        try? modelContext.save()
+    }
 }
 
 // MARK: - Pixel Stat Row
@@ -209,8 +292,8 @@ struct PixelAchievementsSection: View {
         [
             (.flame, "7 DAY STREAK", player.highestStreak >= 7),
             (.flame, "30 DAY STREAK", player.highestStreak >= 30),
-            (.dumbbell, "10 WORKOUTS", player.workouts.count >= 10),
-            (.dumbbell, "50 WORKOUTS", player.workouts.count >= 50),
+            (.dumbbell, "10 WORKOUTS", (player.workouts ?? []).count >= 10),
+            (.dumbbell, "50 WORKOUTS", (player.workouts ?? []).count >= 50),
             (.star, "REACH LV.10", (player.pet?.currentLevel ?? 0) >= 10),
             (.dragon, "EVOLVE PET", (player.pet?.evolutionStage ?? .baby) != .baby),
         ]

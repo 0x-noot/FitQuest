@@ -3,12 +3,15 @@ import SwiftData
 
 @Model
 final class DailyQuest {
-    var id: UUID
-    var questTypeRaw: String
-    var progress: Int
-    var isCompleted: Bool
-    var isRewardClaimed: Bool
-    var createdAt: Date
+    var id: UUID = UUID()
+    var questTypeRaw: String = ""
+    var progress: Int = 0
+    var isCompleted: Bool = false
+    var isRewardClaimed: Bool = false
+    var createdAt: Date = Date()
+
+    // Inverse relationship for CloudKit
+    var player: Player?
 
     var questType: QuestType {
         get { QuestType(rawValue: questTypeRaw) ?? .streakKeeper }

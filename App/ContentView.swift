@@ -27,6 +27,8 @@ struct ContentView: View {
                             switch selectedTab {
                             case .home:
                                 HomeTab(player: player)
+                            case .clubs:
+                                ClubsTab(player: player)
                             case .history:
                                 HistoryTab(player: player)
                             case .profile:
@@ -93,7 +95,7 @@ struct ContentView: View {
             }
         } else if let existingPlayer = players.first {
             // Existing users who have workouts should skip onboarding
-            if !existingPlayer.hasCompletedOnboarding && !existingPlayer.workouts.isEmpty {
+            if !existingPlayer.hasCompletedOnboarding && !(existingPlayer.workouts ?? []).isEmpty {
                 existingPlayer.hasCompletedOnboarding = true
                 // Set a reasonable default weekly goal for existing users
                 if existingPlayer.weeklyWorkoutGoal == 0 {
@@ -133,5 +135,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
-        .modelContainer(for: [Player.self, Workout.self, WorkoutTemplate.self, Pet.self, DailyQuest.self], inMemory: true)
+        .modelContainer(for: [Player.self, Workout.self, WorkoutTemplate.self, Pet.self, DailyQuest.self, AuthState.self, Club.self, ClubActivity.self], inMemory: true)
 }

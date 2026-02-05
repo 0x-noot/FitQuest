@@ -86,7 +86,7 @@ struct PetManager {
         let calendar = Calendar.current
         let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
 
-        let recentWorkouts = player.workouts.filter { $0.completedAt >= sevenDaysAgo }
+        let recentWorkouts = (player.workouts ?? []).filter { $0.completedAt >= sevenDaysAgo }
 
         return recentWorkouts.count >= 3
     }

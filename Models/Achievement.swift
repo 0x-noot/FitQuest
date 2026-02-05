@@ -15,7 +15,7 @@ struct Achievement: Identifiable {
             description: "Complete your first workout",
             icon: "figure.walk",
             color: Theme.success,
-            isEarned: { $0.workouts.count >= 1 }
+            isEarned: { ($0.workouts ?? []).count >= 1 }
         ),
         Achievement(
             id: "week_warrior",
@@ -47,7 +47,7 @@ struct Achievement: Identifiable {
             description: "Complete 100 workouts",
             icon: "100.circle.fill",
             color: Theme.primary,
-            isEarned: { $0.workouts.count >= 100 }
+            isEarned: { ($0.workouts ?? []).count >= 100 }
         ),
         Achievement(
             id: "pet_xp_hunter",
@@ -88,7 +88,7 @@ struct Achievement: Identifiable {
             icon: "sunrise.fill",
             color: Color.yellow,
             isEarned: { player in
-                player.workouts.contains { workout in
+                (player.workouts ?? []).contains { workout in
                     let hour = Calendar.current.component(.hour, from: workout.completedAt)
                     return hour < 9
                 }
@@ -101,7 +101,7 @@ struct Achievement: Identifiable {
             icon: "moon.stars.fill",
             color: Theme.secondary,
             isEarned: { player in
-                player.workouts.contains { workout in
+                (player.workouts ?? []).contains { workout in
                     let hour = Calendar.current.component(.hour, from: workout.completedAt)
                     return hour >= 21
                 }

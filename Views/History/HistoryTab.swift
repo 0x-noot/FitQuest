@@ -7,21 +7,21 @@ struct HistoryTab: View {
     @Bindable var player: Player
 
     private var recentWorkouts: [Workout] {
-        player.workouts.sorted { $0.completedAt > $1.completedAt }
+        (player.workouts ?? []).sorted { $0.completedAt > $1.completedAt }
     }
 
     private var totalXPEarned: Int {
-        player.workouts.reduce(0) { $0 + $1.xpEarned }
+        (player.workouts ?? []).reduce(0) { $0 + $1.xpEarned }
     }
 
     private var totalWorkouts: Int {
-        player.workouts.count
+        (player.workouts ?? []).count
     }
 
     private var xpThisWeek: Int {
         let calendar = Calendar.current
         let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) ?? Date()
-        return player.workouts
+        return (player.workouts ?? [])
             .filter { $0.completedAt >= weekStart }
             .reduce(0) { $0 + $1.xpEarned }
     }

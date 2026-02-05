@@ -4,12 +4,14 @@ import SwiftUI
 
 enum PixelTab: String, CaseIterable {
     case home
+    case clubs
     case history
     case profile
 
     var icon: PixelIcon {
         switch self {
         case .home: return .home
+        case .clubs: return .group
         case .history: return .scroll
         case .profile: return .person
         }
@@ -18,6 +20,7 @@ enum PixelTab: String, CaseIterable {
     var label: String {
         switch self {
         case .home: return "HOME"
+        case .clubs: return "CLUBS"
         case .history: return "LOG"
         case .profile: return "STATS"
         }

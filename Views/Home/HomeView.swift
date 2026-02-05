@@ -64,7 +64,7 @@ struct HomeTab: View {
                     .padding(.horizontal, PixelScale.px(2))
 
                 // Daily quests panel (at bottom)
-                if !player.dailyQuests.isEmpty {
+                if !(player.dailyQuests ?? []).isEmpty {
                     questsSection
                         .padding(.horizontal, PixelScale.px(2))
                         .padding(.bottom, PixelScale.px(2))
@@ -296,11 +296,11 @@ struct HomeTab: View {
     private var questsSection: some View {
         PixelPanelWithCounter(
             title: "QUESTS",
-            current: player.dailyQuests.filter { $0.isCompleted }.count,
-            total: player.dailyQuests.count
+            current: (player.dailyQuests ?? []).filter { $0.isCompleted }.count,
+            total: (player.dailyQuests ?? []).count
         ) {
             VStack(spacing: PixelScale.px(1)) {
-                ForEach(player.dailyQuests.prefix(3)) { quest in
+                ForEach((player.dailyQuests ?? []).prefix(3)) { quest in
                     PixelQuestRow(quest: quest) {
                         claimQuestReward(quest)
                     }
@@ -435,19 +435,19 @@ struct HomeTab: View {
     private func refreshDailyQuestsIfNeeded() {
         // Refresh if it's a new day OR if quests are empty (e.g., after data migration)
         let needsRefresh = QuestManager.shared.shouldRefreshQuests(lastRefresh: player.lastQuestRefresh)
-            || player.dailyQuests.isEmpty
+            || (player.dailyQuests ?? []).isEmpty
 
         if needsRefresh {
             // Clear old quests
-            for quest in player.dailyQuests {
+            for quest in (player.dailyQuests ?? []) {
                 modelContext.delete(quest)
             }
-            player.dailyQuests.removeAll()
+            player.dailyQuests = []
 
             // Generate and store new quests
             let newQuests = QuestManager.shared.generateDailyQuests()
             for quest in newQuests {
-                player.dailyQuests.append(quest)
+                player.dailyQuests?.append(quest)
                 modelContext.insert(quest)
             }
             player.lastQuestRefresh = Date()
@@ -456,7 +456,7 @@ struct HomeTab: View {
     }
 
     private func checkQuestProgress(workout: Workout? = nil) {
-        for quest in player.dailyQuests {
+        for quest in (player.dailyQuests ?? []) {
             _ = QuestManager.shared.checkQuestCompletion(
                 quest: quest,
                 player: player,
@@ -465,20 +465,20 @@ struct HomeTab: View {
         }
 
         if let pet = player.pet {
-            for quest in player.dailyQuests where quest.questType == .happyPet {
+            for quest in (player.dailyQuests ?? []) where quest.questType == .happyPet {
                 _ = QuestManager.shared.checkHappyPetQuest(quest: quest, pet: pet)
             }
         }
     }
 
     private func checkPetCareQuest() {
-        for quest in player.dailyQuests where quest.questType == .petCare {
+        for quest in (player.dailyQuests ?? []) where quest.questType == .petCare {
             _ = QuestManager.shared.checkPetCareQuest(quest: quest)
         }
     }
 
     private func checkPlayTimeQuest() {
-        for quest in player.dailyQuests where quest.questType == .playTime {
+        for quest in (player.dailyQuests ?? []) where quest.questType == .playTime {
             _ = QuestManager.shared.checkPlayTimeQuest(quest: quest)
         }
     }
@@ -502,7 +502,7 @@ struct HomeTab: View {
         player.updateWeeklyStreak(isFirstWorkout: isFirstWorkoutOfDay)
 
         workout.player = player
-        player.workouts.append(workout)
+        player.workouts?.append(workout)
         modelContext.insert(workout)
 
         if let pet = player.pet {
@@ -551,6 +551,65 @@ struct HomeTab: View {
         }
 
         try? modelContext.save()
+
+        // Post activity to clubs
+        postClubActivity(workout: workout, didLevelUp: showPetLevelUp, didEvolve: showEvolution)
+    }
+
+    // MARK: - Club Activity Posting
+
+    private func postClubActivity(workout: Workout, didLevelUp: Bool, didEvolve: Bool) {
+        guard let userID = player.appleUserID else { return }
+        guard !(player.clubs ?? []).isEmpty else { return }
+
+        let displayName = player.effectiveDisplayName
+
+        Task {
+            for club in (player.clubs ?? []) {
+                // Post workout activity
+                try? await CloudKitService.shared.postActivity(
+                    clubRecordName: club.cloudKitRecordName,
+                    userID: userID,
+                    displayName: displayName,
+                    type: .workout,
+                    xp: workout.xpEarned
+                )
+
+                // Post level up activity
+                if didLevelUp, let pet = player.pet {
+                    try? await CloudKitService.shared.postActivity(
+                        clubRecordName: club.cloudKitRecordName,
+                        userID: userID,
+                        displayName: displayName,
+                        type: .levelUp,
+                        xp: 0,
+                        message: "\(displayName)'s \(pet.name) reached level \(pet.currentLevel)!"
+                    )
+                }
+
+                // Post evolution activity
+                if didEvolve, let pet = player.pet {
+                    try? await CloudKitService.shared.postActivity(
+                        clubRecordName: club.cloudKitRecordName,
+                        userID: userID,
+                        displayName: displayName,
+                        type: .evolution,
+                        xp: 0,
+                        message: "\(displayName)'s \(pet.name) evolved to \(pet.evolutionStage.displayName)!"
+                    )
+                }
+
+                // Update leaderboard entry
+                try? await CloudKitService.shared.updateLeaderboardEntry(
+                    clubRecordName: club.cloudKitRecordName,
+                    userID: userID,
+                    displayName: displayName,
+                    weeklyXP: player.xpThisWeek,
+                    weeklyWorkouts: player.workoutsThisWeek.count,
+                    streak: player.currentStreak
+                )
+            }
+        }
     }
 }
 
