@@ -23,7 +23,7 @@ struct OnboardingPetStep: View {
                 // Species selection
                 ScrollView {
                     VStack(spacing: PixelScale.px(2)) {
-                        ForEach(PetSpecies.allCases, id: \.self) { species in
+                        ForEach(PetSpecies.selectableSpecies, id: \.self) { species in
                             PixelPetSelectionCard(
                                 species: species,
                                 isSelected: selectedSpecies == species,
@@ -120,8 +120,7 @@ struct PixelPetSelectionCard: View {
         switch species {
         case .plant: return .leaf
         case .cat: return .cat
-        case .dog: return .dog
-        case .wolf: return .dog
+        case .dog, .wolf: return .dog
         case .dragon: return .dragon
         }
     }

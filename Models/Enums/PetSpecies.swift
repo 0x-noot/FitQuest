@@ -4,8 +4,13 @@ enum PetSpecies: String, Codable, CaseIterable {
     case plant
     case cat
     case dog
-    case wolf
+    case wolf // Kept for backward compatibility (existing data)
     case dragon
+
+    /// Species available for selection in onboarding (excludes deprecated wolf)
+    static var selectableSpecies: [PetSpecies] {
+        [.plant, .cat, .dog, .dragon]
+    }
 
     var displayName: String {
         switch self {

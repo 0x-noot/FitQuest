@@ -72,7 +72,8 @@ struct OnboardingView: View {
         case 1:
             OnboardingAuthStep(
                 player: player,
-                onComplete: { goToNextStep() }
+                onComplete: { goToNextStep() },
+                onRestore: { /* player.hasCompletedOnboarding is already set — ContentView handles transition */ }
             )
         case 2:
             OnboardingGoalsStep(
@@ -178,6 +179,16 @@ struct OnboardingView: View {
         player.hasCompletedOnboarding = true
 
         try? modelContext.save()
+
+        // Sync full profile to CloudKit
+        if let appleUserID = player.appleUserID {
+            Task {
+                try? await CloudKitService.shared.createOrUpdateUserProfile(
+                    player: player,
+                    appleUserID: appleUserID
+                )
+            }
+        }
     }
 }
 

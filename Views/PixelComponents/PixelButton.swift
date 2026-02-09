@@ -162,13 +162,13 @@ struct PixelToggle: View {
             HStack {
                 PixelText(label, size: .small)
                 Spacer()
-                // Toggle indicator
+                // Toggle indicator - white on right when ON, white on left when OFF
                 HStack(spacing: 0) {
                     Rectangle()
-                        .fill(isOn ? PixelTheme.gbDarkest : PixelTheme.cardBackground)
+                        .fill(isOn ? PixelTheme.gbLight : PixelTheme.gbLightest)
                         .frame(width: PixelScale.px(4), height: PixelScale.px(3))
                     Rectangle()
-                        .fill(isOn ? PixelTheme.cardBackground : PixelTheme.gbDarkest)
+                        .fill(isOn ? PixelTheme.gbLightest : PixelTheme.gbLight)
                         .frame(width: PixelScale.px(4), height: PixelScale.px(3))
                 }
                 .pixelOutline()

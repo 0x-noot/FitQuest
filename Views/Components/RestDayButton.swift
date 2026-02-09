@@ -12,45 +12,43 @@ struct RestDayButton: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: PixelScale.px(1)) {
             Button {
                 showConfirmation = true
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "bed.double.fill")
-                        .font(.system(size: 14))
+                HStack(spacing: PixelScale.px(2)) {
+                    PixelIconView(
+                        icon: .moon,
+                        size: 14,
+                        color: canUseRestDay ? PixelTheme.gbLightest : PixelTheme.textSecondary
+                    )
 
-                    Text("Use Rest Day")
-                        .font(.system(size: 14, weight: .medium))
+                    PixelText(
+                        "REST DAY",
+                        size: .small,
+                        color: canUseRestDay ? PixelTheme.text : PixelTheme.textSecondary
+                    )
 
-                    Text("(\(player.remainingRestDays) left)")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.textMuted)
+                    PixelText(
+                        "(\(player.remainingRestDays) LEFT)",
+                        size: .small,
+                        color: PixelTheme.textSecondary
+                    )
                 }
-                .foregroundColor(canUseRestDay ? Theme.secondary : Theme.textMuted)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(canUseRestDay ? Theme.secondary.opacity(0.15) : Theme.elevated)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(canUseRestDay ? Theme.secondary.opacity(0.3) : Theme.elevated, lineWidth: 1)
-                )
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, PixelScale.px(3))
+                .padding(.vertical, PixelScale.px(2))
+                .background(canUseRestDay ? PixelTheme.cardBackground : PixelTheme.gbDarkest)
+                .pixelOutline(color: canUseRestDay ? PixelTheme.border : PixelTheme.gbDark)
             }
             .buttonStyle(.plain)
             .disabled(!canUseRestDay)
 
             if !canUseRestDay && player.currentStreak > 0 {
                 if player.hasWorkedOutToday {
-                    Text("You've already worked out today!")
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.success)
+                    PixelText("ALREADY WORKED OUT!", size: .small, color: PixelTheme.textSecondary)
                 } else if player.remainingRestDays == 0 {
-                    Text("No rest days left this week")
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.textMuted)
+                    PixelText("NO REST DAYS LEFT", size: .small, color: PixelTheme.textSecondary)
                 }
             }
         }
@@ -82,14 +80,12 @@ struct RestDayButton: View {
 
 #Preview {
     VStack(spacing: 20) {
-        // Has streak, hasn't worked out
         RestDayButton(player: {
             let p = Player(name: "Test")
             p.currentStreak = 5
             return p
         }())
 
-        // Has streak, already worked out
         RestDayButton(player: {
             let p = Player(name: "Test")
             p.currentStreak = 5
@@ -97,13 +93,12 @@ struct RestDayButton: View {
             return p
         }())
 
-        // No streak
         RestDayButton(player: {
             let p = Player(name: "Test")
             p.currentStreak = 0
             return p
         }())
     }
-    .padding()
-    .background(Color(red: 0.05, green: 0.05, blue: 0.06))
+    .padding(PixelScale.px(4))
+    .background(PixelTheme.background)
 }

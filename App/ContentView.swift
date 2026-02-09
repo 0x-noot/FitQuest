@@ -7,7 +7,6 @@ struct ContentView: View {
     @Query private var players: [Player]
     @State private var isInitialized = false
     @State private var selectedTab: PixelTab = .home
-    @State private var forceRefresh = false
 
     private var player: Player? {
         players.first
@@ -37,6 +36,15 @@ struct ContentView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+                        // Banner ad
+                        GeometryReader { geometry in
+                            BannerAdView(
+                                adUnitID: AdManager.bannerAdUnitID,
+                                width: geometry.size.width
+                            )
+                        }
+                        .frame(height: 50)
+
                         // Custom pixel tab bar
                         PixelTabBar(selectedTab: $selectedTab)
                     }
@@ -56,7 +64,6 @@ struct ContentView: View {
             }
         }
         .background(PixelTheme.background)
-        .id(forceRefresh)
         .onAppear {
             // Small delay to ensure SwiftData is ready
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -64,6 +71,9 @@ struct ContentView: View {
                     initializePlayer()
                 }
             }
+        }
+        .task {
+            seedTemplatesIfNeeded()
         }
         .onChange(of: player?.hasWorkedOutToday) { _, hasWorkedOut in
             // Cancel today's guilt notifications if user has worked out
@@ -86,10 +96,6 @@ struct ContentView: View {
 
             do {
                 try modelContext.save()
-                // Force a refresh after saving
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    forceRefresh.toggle()
-                }
             } catch {
                 print("Error saving player: \(error)")
             }
@@ -104,29 +110,29 @@ struct ContentView: View {
                 try? modelContext.save()
             }
         }
-
-        // Seed workout templates
-        seedTemplatesIfNeeded()
     }
 
     private func seedTemplatesIfNeeded() {
-        let templateDescriptor = FetchDescriptor<WorkoutTemplate>()
-        let existingTemplates = (try? modelContext.fetch(templateDescriptor)) ?? []
-        let existingNames = Set(existingTemplates.map { $0.name })
+        let existingTemplates = (try? modelContext.fetch(FetchDescriptor<WorkoutTemplate>())) ?? []
+        let defaults = WorkoutTemplate.createDefaults()
+        let defaultNames = Set(defaults.map { $0.name })
 
-        // Add any missing default templates
-        for template in WorkoutTemplate.createDefaults() {
-            if !existingNames.contains(template.name) {
-                modelContext.insert(template)
+        // Track which default names already have a kept template
+        var keptNames = Set<String>()
+
+        for template in existingTemplates where !template.isCustom {
+            if !defaultNames.contains(template.name) || keptNames.contains(template.name) {
+                // Obsolete or duplicate — delete
+                modelContext.delete(template)
+            } else {
+                // First occurrence of a current default — keep
+                keptNames.insert(template.name)
             }
         }
 
-        // Remove old templates that are no longer in defaults (except custom ones)
-        let defaultNames = Set(WorkoutTemplate.createDefaults().map { $0.name })
-        for template in existingTemplates {
-            if !template.isCustom && !defaultNames.contains(template.name) {
-                modelContext.delete(template)
-            }
+        // Insert any missing defaults
+        for template in defaults where !keptNames.contains(template.name) {
+            modelContext.insert(template)
         }
 
         try? modelContext.save()

@@ -166,17 +166,17 @@ struct PixelScale {
 // MARK: - Pixel Font Sizes
 
 enum PixelFontSize {
-    case small      // 10pt - labels, hints
-    case medium     // 14pt - body text
-    case large      // 18pt - headers
-    case xlarge     // 24pt - titles
+    case small      // 12pt - labels, hints
+    case medium     // 17pt - body text
+    case large      // 22pt - headers
+    case xlarge     // 30pt - titles
 
     var pointSize: CGFloat {
         switch self {
-        case .small: return 10
-        case .medium: return 14
-        case .large: return 18
-        case .xlarge: return 24
+        case .small: return 12
+        case .medium: return 17
+        case .large: return 22
+        case .xlarge: return 30
         }
     }
 

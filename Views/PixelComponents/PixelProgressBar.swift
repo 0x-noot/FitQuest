@@ -44,7 +44,7 @@ struct PixelProgressBar: View {
             HStack(spacing: PixelScale.px(1)) {
                 ForEach(0..<segments, id: \.self) { index in
                     Rectangle()
-                        .fill(index < filledSegments ? PixelTheme.gbDarkest : PixelTheme.gbLight)
+                        .fill(index < filledSegments ? PixelTheme.gbLightest : PixelTheme.gbDarkest)
                         .frame(height: height)
                         .contentShape(Rectangle())
                         .onTapGesture {
@@ -130,7 +130,7 @@ struct PixelWeeklyBar: View {
             HStack(spacing: PixelScale.px(1)) {
                 ForEach(0..<goal, id: \.self) { index in
                     Rectangle()
-                        .fill(index < daysCompleted ? PixelTheme.gbDarkest : PixelTheme.gbLight)
+                        .fill(index < daysCompleted ? PixelTheme.gbLightest : PixelTheme.gbDarkest)
                         .frame(height: PixelScale.px(4))
                         .pixelOutline()
                 }

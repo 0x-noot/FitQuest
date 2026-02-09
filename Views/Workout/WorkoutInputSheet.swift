@@ -14,7 +14,6 @@ struct WorkoutInputSheet: View {
 
     // Cardio inputs
     @State private var durationMinutes: Int = 30
-    @State private var steps: String = ""
     @State private var calories: String = ""
 
     // Walking-specific inputs
@@ -26,7 +25,6 @@ struct WorkoutInputSheet: View {
     }
 
     private var estimatedXP: Int {
-        let stepsValue = Int(steps)
         let caloriesValue = Int(calories)
 
         return XPCalculator.calculateTotalXP(
@@ -39,7 +37,7 @@ struct WorkoutInputSheet: View {
             reps: template.workoutType == .strength ? reps : nil,
             sets: template.workoutType == .strength ? sets : nil,
             durationMinutes: template.workoutType == .cardio ? durationMinutes : nil,
-            steps: stepsValue,
+            steps: nil,
             calories: caloriesValue,
             incline: isWalkingWorkout ? incline : nil,
             speed: isWalkingWorkout ? speed : nil
@@ -241,29 +239,15 @@ struct WorkoutInputSheet: View {
                 walkingIntensityInputs
             }
 
-            HStack(spacing: PixelScale.px(2)) {
-                // Steps (optional)
-                PixelPanel(title: "STEPS") {
-                    VStack(spacing: PixelScale.px(1)) {
-                        PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
-                        TextField("0", text: $steps)
-                            .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
-                            .foregroundColor(PixelTheme.text)
-                            .multilineTextAlignment(.center)
-                            .keyboardType(.numberPad)
-                    }
-                }
-
-                // Calories (optional)
-                PixelPanel(title: "CALORIES") {
-                    VStack(spacing: PixelScale.px(1)) {
-                        PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
-                        TextField("0", text: $calories)
-                            .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
-                            .foregroundColor(PixelTheme.text)
-                            .multilineTextAlignment(.center)
-                            .keyboardType(.numberPad)
-                    }
+            // Calories (optional)
+            PixelPanel(title: "CALORIES") {
+                VStack(spacing: PixelScale.px(1)) {
+                    PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
+                    TextField("0", text: $calories)
+                        .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
+                        .foregroundColor(PixelTheme.text)
+                        .multilineTextAlignment(.center)
+                        .keyboardType(.numberPad)
                 }
             }
         }
@@ -456,7 +440,6 @@ struct WorkoutInputSheet: View {
                 name: template.name,
                 workoutType: .cardio,
                 xpEarned: estimatedXP,
-                steps: Int(steps),
                 durationMinutes: durationMinutes,
                 caloriesBurned: Int(calories),
                 incline: isWalkingWorkout ? incline : nil,

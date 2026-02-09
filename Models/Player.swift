@@ -50,6 +50,10 @@ final class Player {
     // Accessory system
     var unlockedAccessoriesRaw: String = ""  // Comma-separated accessory IDs
 
+    // Step tracking (HealthKit)
+    var lastStepXPAwardDate: Date?
+    var lastStepXPAwardedSteps: Int = 0
+
     // Authentication & CloudKit
     var appleUserID: String?
     var cloudKitRecordName: String?

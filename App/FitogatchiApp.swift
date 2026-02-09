@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 import UIKit
+import GoogleMobileAds
 
 @main
 struct FitogatchiApp: App {
@@ -77,6 +78,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         // Set up notification delegate
         UNUserNotificationCenter.current().delegate = NotificationManager.shared
+
+        // Initialize Google Mobile Ads SDK
+        GADMobileAds.sharedInstance().start(completionHandler: nil)
+
         return true
     }
 }

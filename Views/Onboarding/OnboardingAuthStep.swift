@@ -6,6 +6,7 @@ struct OnboardingAuthStep: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var player: Player
     let onComplete: () -> Void
+    var onRestore: (() -> Void)?
 
     @StateObject private var authManager = AuthManager.shared
     @State private var isSigningIn = false
@@ -129,6 +130,23 @@ struct OnboardingAuthStep: View {
         try? modelContext.save()
 
         Task {
+            // Try to restore existing profile from CloudKit
+            do {
+                if let restored = try await CloudKitService.shared.fetchRestoredProfile(
+                    appleUserID: credential.user
+                ) {
+                    await MainActor.run {
+                        restorePlayerFromProfile(restored)
+                        isSigningIn = false
+                        onRestore?()
+                    }
+                    return
+                }
+            } catch {
+                print("Failed to fetch CloudKit profile for restore: \(error)")
+            }
+
+            // No restorable profile — first-time user, continue normal onboarding
             do {
                 try await CloudKitService.shared.createOrUpdateUserProfile(
                     player: player,
@@ -144,10 +162,50 @@ struct OnboardingAuthStep: View {
             }
         }
     }
+
+    private func restorePlayerFromProfile(_ profile: RestoredProfile) {
+        // Restore onboarding preferences
+        player.fitnessGoalsRaw = profile.fitnessGoalsRaw
+        player.fitnessLevelRaw = profile.fitnessLevelRaw
+        player.workoutStyleRaw = profile.workoutStyleRaw
+        player.equipmentAccessRaw = profile.equipmentAccessRaw
+        player.focusAreasRaw = profile.focusAreasRaw
+        player.weeklyWorkoutGoal = profile.weeklyWorkoutGoal
+
+        // Restore progression
+        player.currentStreak = profile.currentStreak
+        player.highestStreak = profile.highestStreak
+        player.currentWeeklyStreak = profile.currentWeeklyStreak
+        player.highestWeeklyStreak = profile.highestWeeklyStreak
+        player.essenceCurrency = profile.essenceCurrency
+        player.unlockedAccessoriesRaw = profile.unlockedAccessoriesRaw
+        player.cloudKitRecordName = profile.cloudKitRecordName
+
+        if let displayName = profile.displayName, !displayName.isEmpty {
+            player.displayName = displayName
+        }
+
+        // Restore pet
+        if let speciesRaw = profile.petSpeciesRaw,
+           let species = PetSpecies(rawValue: speciesRaw) {
+            let petName = profile.petName ?? species.displayName
+            let pet = Pet(name: petName, species: species)
+            pet.totalXP = profile.petTotalXP
+            pet.happiness = profile.petHappiness
+            pet.equippedAccessoriesRaw = profile.petEquippedAccessoriesRaw
+            player.pet = pet
+            modelContext.insert(pet)
+        }
+
+        // Mark onboarding complete — triggers ContentView to show main app
+        player.hasCompletedOnboarding = true
+
+        try? modelContext.save()
+    }
 }
 
 #Preview {
-    OnboardingAuthStep(player: Player(name: "")) { }
-        .modelContainer(for: [Player.self, AuthState.self], inMemory: true)
+    OnboardingAuthStep(player: Player(name: ""), onComplete: { }, onRestore: { })
+        .modelContainer(for: [Player.self, AuthState.self, Pet.self], inMemory: true)
         .background(PixelTheme.background)
 }

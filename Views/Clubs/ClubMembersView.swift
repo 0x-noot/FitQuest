@@ -13,61 +13,63 @@ struct ClubMembersView: View {
     @State private var errorMessage = ""
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Header
-                VStack(spacing: PixelScale.px(2)) {
-                    PixelIconView(icon: .group, size: 48, color: PixelTheme.gbLightest)
-                    PixelText("MEMBERS", size: .large)
-                    PixelText(club.memberCountText, size: .small, color: PixelTheme.textSecondary)
-                }
-                .padding(PixelScale.px(4))
-
-                // Members list
-                if isLoading {
-                    Spacer()
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: PixelTheme.text))
-                    PixelText("LOADING...", size: .small, color: PixelTheme.textSecondary)
-                    Spacer()
-                } else if members.isEmpty {
-                    Spacer()
-                    PixelText("NO MEMBERS FOUND", size: .medium, color: PixelTheme.textSecondary)
-                    Spacer()
-                } else {
-                    ScrollView {
-                        VStack(spacing: PixelScale.px(1)) {
-                            ForEach(members) { member in
-                                PixelMemberRow(
-                                    member: member,
-                                    isCurrentUser: member.userID == player.appleUserID,
-                                    showRemoveButton: club.isOwner && member.userID != player.appleUserID,
-                                    onRemove: {
-                                        removeMember(member)
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.horizontal, PixelScale.px(4))
-                    }
-                }
-            }
-            .background(PixelTheme.background)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") {
-                        dismiss()
+        VStack(spacing: 0) {
+            // Header with back button
+            HStack {
+                Button(action: { dismiss() }) {
+                    HStack(spacing: PixelScale.px(1)) {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
                     }
                     .foregroundColor(PixelTheme.text)
                 }
+                Spacer()
+                Button(action: loadMembers) {
+                    PixelIconView(icon: .bolt, size: 20, color: PixelTheme.text)
+                }
+            }
+            .padding(.horizontal, PixelScale.px(4))
+            .padding(.top, PixelScale.px(2))
 
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: loadMembers) {
-                        PixelIconView(icon: .bolt, size: 20, color: PixelTheme.text)
+            // Title Header
+            VStack(spacing: PixelScale.px(2)) {
+                PixelIconView(icon: .group, size: 48, color: PixelTheme.gbLightest)
+                PixelText("MEMBERS", size: .large)
+                PixelText(club.memberCountText, size: .small, color: PixelTheme.textSecondary)
+            }
+            .padding(PixelScale.px(4))
+
+            // Members list
+            if isLoading {
+                Spacer()
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: PixelTheme.text))
+                PixelText("LOADING...", size: .small, color: PixelTheme.textSecondary)
+                Spacer()
+            } else if members.isEmpty {
+                Spacer()
+                PixelText("NO MEMBERS FOUND", size: .medium, color: PixelTheme.textSecondary)
+                Spacer()
+            } else {
+                ScrollView {
+                    VStack(spacing: PixelScale.px(1)) {
+                        ForEach(members) { member in
+                            PixelMemberRow(
+                                member: member,
+                                isCurrentUser: member.userID == player.appleUserID,
+                                showRemoveButton: club.isOwner && member.userID != player.appleUserID,
+                                onRemove: {
+                                    removeMember(member)
+                                }
+                            )
+                        }
                     }
+                    .padding(.horizontal, PixelScale.px(4))
                 }
             }
         }
+        .background(PixelTheme.background)
+        .presentationBackground(PixelTheme.background)
         .alert("Error", isPresented: $showError) {
             Button("OK") { }
         } message: {

@@ -59,6 +59,7 @@ final class WorkoutTemplate {
             WorkoutTemplate(name: "Cycling", workoutType: .cardio, iconName: "figure.outdoor.cycle", baseXP: 175),
             WorkoutTemplate(name: "Swimming", workoutType: .cardio, iconName: "figure.pool.swim", baseXP: 225),
             WorkoutTemplate(name: "Stair Climber", workoutType: .cardio, iconName: "figure.stair.stepper", baseXP: 200),
+            WorkoutTemplate(name: "Padel", workoutType: .cardio, iconName: "figure.racquetball", baseXP: 200),
 
             // CHEST (4 workouts)
             WorkoutTemplate(name: "Barbell Bench Press", workoutType: .strength, muscleGroup: .chest, iconName: "dumbbell.fill", baseXP: 45),

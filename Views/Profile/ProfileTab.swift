@@ -58,10 +58,10 @@ struct ProfileTab: View {
                     // Small pet sprite with species colors
                     PixelSpriteView(
                         sprite: PetSpriteLibrary.sprite(for: pet.species, stage: pet.evolutionStage),
-                        pixelSize: 3,
+                        pixelSize: 1.5,
                         palette: PixelTheme.PetPalette.palette(for: pet.species)
                     )
-                    .frame(width: 48, height: 48)
+                    .frame(width: 48, height: 48, alignment: .center)
 
                     // Pet info
                     VStack(alignment: .leading, spacing: PixelScale.px(1)) {
@@ -116,13 +116,18 @@ struct ProfileTab: View {
                         PixelIconView(icon: .person, size: 12)
                     }
 
-                    if let displayName = player.displayName, !displayName.isEmpty {
+                    Button {
+                        editedName = player.displayName ?? ""
+                        isEditingName = true
+                    } label: {
                         HStack {
                             PixelText("NAME", size: .small, color: PixelTheme.textSecondary)
                             Spacer()
-                            PixelText(displayName.uppercased(), size: .small)
+                            PixelText(player.effectiveDisplayName.uppercased(), size: .small)
+                            PixelIconView(icon: .arrow, size: 10, color: PixelTheme.textSecondary)
                         }
                     }
+                    .buttonStyle(.plain)
 
                     HStack {
                         PixelText("CLUBS", size: .small, color: PixelTheme.textSecondary)
@@ -160,6 +165,19 @@ struct ProfileTab: View {
             }
         } message: {
             Text("Your local data will be kept, but you won't be able to sync or use clubs until you sign in again.")
+        }
+        .alert("Edit Name", isPresented: $isEditingName) {
+            TextField("Display Name", text: $editedName)
+            Button("Cancel", role: .cancel) { }
+            Button("Save") {
+                let trimmed = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    player.displayName = trimmed
+                    try? modelContext.save()
+                }
+            }
+        } message: {
+            Text("Enter your display name")
         }
     }
 

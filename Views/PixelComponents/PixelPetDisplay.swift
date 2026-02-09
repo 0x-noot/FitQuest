@@ -53,10 +53,10 @@ struct PixelPetDisplay: View {
                                 colors: [petPalette.fill.opacity(0.5), petPalette.fill.opacity(0.2), Color.clear],
                                 center: .center,
                                 startRadius: 0,
-                                endRadius: 16 * pixelSize * 0.9
+                                endRadius: 32 * pixelSize * 0.9
                             )
                         )
-                        .frame(width: 16 * pixelSize * 1.6, height: 16 * pixelSize * 1.6)
+                        .frame(width: 32 * pixelSize * 1.6, height: 32 * pixelSize * 1.6)
 
                     // Inner bright glow for more pop
                     Circle()
@@ -65,22 +65,34 @@ struct PixelPetDisplay: View {
                                 colors: [petPalette.highlight.opacity(0.4), petPalette.fill.opacity(0.15), Color.clear],
                                 center: .center,
                                 startRadius: 0,
-                                endRadius: 16 * pixelSize * 0.5
+                                endRadius: 32 * pixelSize * 0.5
                             )
                         )
-                        .frame(width: 16 * pixelSize * 1.2, height: 16 * pixelSize * 1.2)
+                        .frame(width: 32 * pixelSize * 1.2, height: 32 * pixelSize * 1.2)
                 }
 
-                // Background panel
-                Rectangle()
-                    .fill(PixelTheme.cardBackground)
-                    .frame(
-                        width: 16 * pixelSize + PixelScale.px(4),
-                        height: 16 * pixelSize + PixelScale.px(4)
-                    )
-                    .pixelOutline()
+                // Background panel - habitat box (taller for sky above pet)
+                ZStack(alignment: .bottom) {
+                    Rectangle()
+                        .fill(PixelTheme.cardBackground)
+                        .frame(
+                            width: 32 * pixelSize + PixelScale.px(4),
+                            height: 32 * pixelSize + PixelScale.px(10)
+                        )
+                        .pixelOutline()
 
-                // Animated sprite with species-specific colors
+                    // Floor pattern - pixel dots for habitat ground
+                    HStack(spacing: PixelScale.px(2)) {
+                        ForEach(0..<5, id: \.self) { _ in
+                            Rectangle()
+                                .fill(PixelTheme.gbLight.opacity(0.3))
+                                .frame(width: PixelScale.px(1), height: PixelScale.px(1))
+                        }
+                    }
+                    .padding(.bottom, PixelScale.px(2))
+                }
+
+                // Animated sprite with species-specific colors (sits in bottom half)
                 AnimatedSpriteView(
                     animation: animation,
                     pixelSize: pixelSize,
@@ -88,7 +100,7 @@ struct PixelPetDisplay: View {
                     palette: petPalette
                 )
                 .opacity(pet.isAway ? 0.5 : 1.0)
-                .offset(y: bounceOffset)
+                .offset(y: PixelScale.px(3) + bounceOffset)
             }
             .contentShape(Rectangle())
             .onTapGesture {

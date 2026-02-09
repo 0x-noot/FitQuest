@@ -39,64 +39,81 @@ struct AnimatedPetModifier: ViewModifier {
 
         switch mood.idleAnimationType {
         case .bounce:
-            // Energetic bouncing
-            withAnimation(
-                .easeInOut(duration: duration * 0.5)
-                .repeatForever(autoreverses: true)
-            ) {
-                bounceOffset = -bounce
-            }
-            withAnimation(
-                .easeInOut(duration: duration)
-                .repeatForever(autoreverses: true)
-            ) {
-                rotationAngle = 3
-            }
-
-        case .sway:
-            // Side-to-side swaying
-            withAnimation(
-                .easeInOut(duration: duration)
-                .repeatForever(autoreverses: true)
-            ) {
-                swayOffset = bounce * 0.5
-            }
+            // Gentle bobbing instead of energetic bouncing
             withAnimation(
                 .easeInOut(duration: duration * 0.8)
                 .repeatForever(autoreverses: true)
             ) {
-                bounceOffset = -bounce * 0.3
+                bounceOffset = -bounce * 0.25  // Much gentler movement
+            }
+            withAnimation(
+                .easeInOut(duration: duration * 1.2)
+                .repeatForever(autoreverses: true)
+            ) {
+                rotationAngle = 1.5  // Subtle rotation
+            }
+            withAnimation(
+                .easeInOut(duration: duration * 0.9)
+                .repeatForever(autoreverses: true)
+            ) {
+                swayOffset = bounce * 0.1  // Tiny side movement
             }
 
-        case .breathe:
-            // Gentle breathing (handled by scale in parent view)
-            bounceOffset = 0
-            swayOffset = 0
-            rotationAngle = 0
-
-        case .droop:
-            // Slow downward drift
+        case .sway:
+            // Gentle breathing with subtle sway
+            withAnimation(
+                .easeInOut(duration: duration * 1.1)
+                .repeatForever(autoreverses: true)
+            ) {
+                swayOffset = bounce * 0.2  // Reduced sway
+            }
             withAnimation(
                 .easeInOut(duration: duration)
                 .repeatForever(autoreverses: true)
             ) {
-                bounceOffset = bounce * 0.5
+                bounceOffset = -bounce * 0.1  // Minimal vertical
+            }
+
+        case .breathe:
+            // Gentle breathing with very subtle movement
+            withAnimation(
+                .easeInOut(duration: duration * 1.2)
+                .repeatForever(autoreverses: true)
+            ) {
+                bounceOffset = -bounce * 0.08  // Barely noticeable bob
+            }
+            swayOffset = 0
+            rotationAngle = 0
+
+        case .droop:
+            // Slow, sad swaying
+            withAnimation(
+                .easeInOut(duration: duration * 1.2)
+                .repeatForever(autoreverses: true)
+            ) {
+                bounceOffset = bounce * 0.15
+            }
+            withAnimation(
+                .easeInOut(duration: duration)
+                .repeatForever(autoreverses: true)
+            ) {
+                rotationAngle = -2  // Slight head tilt
             }
 
         case .shiver:
-            // Small rapid shaking
+            // Small trembling
             withAnimation(
-                .easeInOut(duration: 0.1)
+                .easeInOut(duration: 0.15)
                 .repeatForever(autoreverses: true)
             ) {
-                swayOffset = bounce * 0.3
+                swayOffset = bounce * 0.15
             }
 
         case .collapse:
             // Minimal movement with slight droop
-            withAnimation(.easeOut(duration: 1.0)) {
-                bounceOffset = bounce
-                rotationAngle = -5
+            withAnimation(.easeOut(duration: 1.5)) {
+                bounceOffset = bounce * 0.3
+                rotationAngle = -3
             }
         }
     }

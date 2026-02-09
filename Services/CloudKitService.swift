@@ -3,6 +3,37 @@ import CloudKit
 import SwiftUI
 import Combine
 
+struct RestoredProfile {
+    let hasCompletedOnboarding: Bool
+    let displayName: String?
+
+    // Onboarding preferences
+    let fitnessGoalsRaw: String
+    let fitnessLevelRaw: String
+    let workoutStyleRaw: String
+    let equipmentAccessRaw: String
+    let focusAreasRaw: String
+    let weeklyWorkoutGoal: Int
+
+    // Pet data
+    let petName: String?
+    let petSpeciesRaw: String?
+    let petTotalXP: Int
+    let petHappiness: Double
+    let petEquippedAccessoriesRaw: String
+
+    // Progression
+    let currentStreak: Int
+    let highestStreak: Int
+    let totalWorkouts: Int
+    let currentWeeklyStreak: Int
+    let highestWeeklyStreak: Int
+    let essenceCurrency: Int
+    let unlockedAccessoriesRaw: String
+
+    let cloudKitRecordName: String
+}
+
 @MainActor
 class CloudKitService: ObservableObject {
     static let shared = CloudKitService()
@@ -33,38 +64,90 @@ class CloudKitService: ObservableObject {
         do {
             let existingRecord = try await fetchUserProfileRecord(appleUserID: appleUserID)
 
-            if let record = existingRecord {
-                record["displayName"] = player.displayName ?? "Player"
-                record["totalXP"] = player.pet?.totalXP ?? 0
-                record["currentStreak"] = player.currentStreak
-                record["highestStreak"] = player.highestStreak
-                record["totalWorkouts"] = (player.workouts ?? []).count
-                record["updatedAt"] = Date()
-
-                _ = try await privateDatabase.save(record)
-                player.cloudKitRecordName = record.recordID.recordName
+            let record: CKRecord
+            if let existing = existingRecord {
+                record = existing
             } else {
                 let recordID = CKRecord.ID(recordName: UUID().uuidString)
-                let record = CKRecord(recordType: userProfileRecordType, recordID: recordID)
-
+                record = CKRecord(recordType: userProfileRecordType, recordID: recordID)
                 record["appleUserID"] = appleUserID
-                record["displayName"] = player.displayName ?? "Player"
-                record["totalXP"] = player.pet?.totalXP ?? 0
-                record["currentStreak"] = player.currentStreak
-                record["highestStreak"] = player.highestStreak
-                record["totalWorkouts"] = (player.workouts ?? []).count
                 record["createdAt"] = Date()
-                record["updatedAt"] = Date()
-
-                let savedRecord = try await privateDatabase.save(record)
-                player.cloudKitRecordName = savedRecord.recordID.recordName
             }
+
+            // Basic stats
+            record["displayName"] = player.displayName ?? "Player"
+            record["totalXP"] = player.pet?.totalXP ?? 0
+            record["currentStreak"] = player.currentStreak
+            record["highestStreak"] = player.highestStreak
+            record["totalWorkouts"] = (player.workouts ?? []).count
+
+            // Onboarding state
+            record["hasCompletedOnboarding"] = player.hasCompletedOnboarding ? 1 : 0
+            record["fitnessGoalsRaw"] = player.fitnessGoalsRaw
+            record["fitnessLevelRaw"] = player.fitnessLevelRaw
+            record["workoutStyleRaw"] = player.workoutStyleRaw
+            record["equipmentAccessRaw"] = player.equipmentAccessRaw
+            record["focusAreasRaw"] = player.focusAreasRaw
+            record["weeklyWorkoutGoal"] = player.weeklyWorkoutGoal
+
+            // Pet data
+            if let pet = player.pet {
+                record["petName"] = pet.name
+                record["petSpeciesRaw"] = pet.speciesRaw
+                record["petTotalXP"] = pet.totalXP
+                record["petHappiness"] = pet.happiness
+                record["petEquippedAccessoriesRaw"] = pet.equippedAccessoriesRaw
+            }
+
+            // Progression
+            record["currentWeeklyStreak"] = player.currentWeeklyStreak
+            record["highestWeeklyStreak"] = player.highestWeeklyStreak
+            record["essenceCurrency"] = player.essenceCurrency
+            record["unlockedAccessoriesRaw"] = player.unlockedAccessoriesRaw
+
+            record["updatedAt"] = Date()
+
+            let savedRecord = try await privateDatabase.save(record)
+            player.cloudKitRecordName = savedRecord.recordID.recordName
 
             syncStatus = .success
         } catch {
             syncStatus = .error(error.localizedDescription)
             throw mapCloudKitError(error)
         }
+    }
+
+    func fetchRestoredProfile(appleUserID: String) async throws -> RestoredProfile? {
+        guard let record = try await fetchUserProfileRecord(appleUserID: appleUserID) else {
+            return nil
+        }
+
+        let hasCompleted = (record["hasCompletedOnboarding"] as? Int ?? 0) == 1
+        guard hasCompleted else { return nil }
+
+        return RestoredProfile(
+            hasCompletedOnboarding: true,
+            displayName: record["displayName"] as? String,
+            fitnessGoalsRaw: record["fitnessGoalsRaw"] as? String ?? "",
+            fitnessLevelRaw: record["fitnessLevelRaw"] as? String ?? "",
+            workoutStyleRaw: record["workoutStyleRaw"] as? String ?? "",
+            equipmentAccessRaw: record["equipmentAccessRaw"] as? String ?? "",
+            focusAreasRaw: record["focusAreasRaw"] as? String ?? "",
+            weeklyWorkoutGoal: record["weeklyWorkoutGoal"] as? Int ?? 3,
+            petName: record["petName"] as? String,
+            petSpeciesRaw: record["petSpeciesRaw"] as? String,
+            petTotalXP: record["petTotalXP"] as? Int ?? (record["totalXP"] as? Int ?? 0),
+            petHappiness: record["petHappiness"] as? Double ?? 100.0,
+            petEquippedAccessoriesRaw: record["petEquippedAccessoriesRaw"] as? String ?? "",
+            currentStreak: record["currentStreak"] as? Int ?? 0,
+            highestStreak: record["highestStreak"] as? Int ?? 0,
+            totalWorkouts: record["totalWorkouts"] as? Int ?? 0,
+            currentWeeklyStreak: record["currentWeeklyStreak"] as? Int ?? 0,
+            highestWeeklyStreak: record["highestWeeklyStreak"] as? Int ?? 0,
+            essenceCurrency: record["essenceCurrency"] as? Int ?? 0,
+            unlockedAccessoriesRaw: record["unlockedAccessoriesRaw"] as? String ?? "",
+            cloudKitRecordName: record.recordID.recordName
+        )
     }
 
     func fetchUserProfileRecord(appleUserID: String) async throws -> CKRecord? {

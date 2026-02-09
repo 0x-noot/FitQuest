@@ -96,6 +96,15 @@ struct HistoryTab: View {
                         PixelText("\(player.currentStreak) STREAK", size: .small)
                     }
                 }
+
+                // Rest day / streak freeze
+                if player.currentStreak > 0 {
+                    Rectangle()
+                        .fill(PixelTheme.border.opacity(0.3))
+                        .frame(height: PixelScale.px(1))
+
+                    RestDayButton(player: player)
+                }
             }
         }
     }

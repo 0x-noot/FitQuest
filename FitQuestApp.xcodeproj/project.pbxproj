@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		7DAD00012F50AD0100000003 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 7DAD00012F50AD0100000002 /* GoogleMobileAds */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		7D3812FF2F16779A00D5DA9C /* FitQuestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FitQuestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7DAD00012F50AD0100000003 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +83,7 @@
 			);
 			name = FitQuestApp;
 			packageProductDependencies = (
+				7DAD00012F50AD0100000002 /* GoogleMobileAds */,
 			);
 			productName = FitQuestApp;
 			productReference = 7D3812FF2F16779A00D5DA9C /* FitQuestApp.app */;
@@ -107,6 +113,9 @@
 			);
 			mainGroup = 7D3812F62F16779A00D5DA9C;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7DAD00012F50AD0100000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7D3813002F16779A00D5DA9C /* Products */;
 			projectDirPath = "";
@@ -269,6 +278,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FitQuestApp/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Let your daily steps count and earn you XP!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -303,6 +313,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = FitQuestApp/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Let your daily steps count and earn you XP!";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -347,6 +358,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7DAD00012F50AD0100000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7DAD00012F50AD0100000002 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7DAD00012F50AD0100000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7D3812F72F16779A00D5DA9C /* Project object */;
 }

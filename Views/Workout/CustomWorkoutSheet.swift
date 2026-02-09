@@ -202,7 +202,6 @@ struct CustomWorkoutInputSheet: View {
 
     // Cardio inputs
     @State private var durationMinutes: Int = 30
-    @State private var steps: String = ""
     @State private var calories: String = ""
 
     private var estimatedXP: Int {
@@ -216,7 +215,7 @@ struct CustomWorkoutInputSheet: View {
             reps: workoutType == .strength ? reps : nil,
             sets: workoutType == .strength ? sets : nil,
             durationMinutes: workoutType == .cardio ? durationMinutes : nil,
-            steps: Int(steps),
+            steps: nil,
             calories: Int(calories)
         )
     }
@@ -393,29 +392,15 @@ struct CustomWorkoutInputSheet: View {
                 }
             }
 
-            HStack(spacing: PixelScale.px(2)) {
-                // Steps (optional)
-                PixelPanel(title: "STEPS") {
-                    VStack(spacing: PixelScale.px(1)) {
-                        PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
-                        TextField("0", text: $steps)
-                            .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
-                            .foregroundColor(PixelTheme.text)
-                            .multilineTextAlignment(.center)
-                            .keyboardType(.numberPad)
-                    }
-                }
-
-                // Calories (optional)
-                PixelPanel(title: "CALORIES") {
-                    VStack(spacing: PixelScale.px(1)) {
-                        PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
-                        TextField("0", text: $calories)
-                            .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
-                            .foregroundColor(PixelTheme.text)
-                            .multilineTextAlignment(.center)
-                            .keyboardType(.numberPad)
-                    }
+            // Calories (optional)
+            PixelPanel(title: "CALORIES") {
+                VStack(spacing: PixelScale.px(1)) {
+                    PixelText("(OPTIONAL)", size: .small, color: PixelTheme.textSecondary)
+                    TextField("0", text: $calories)
+                        .font(.custom("Menlo-Bold", size: PixelFontSize.large.pointSize))
+                        .foregroundColor(PixelTheme.text)
+                        .multilineTextAlignment(.center)
+                        .keyboardType(.numberPad)
                 }
             }
         }
@@ -522,7 +507,6 @@ struct CustomWorkoutInputSheet: View {
                 name: workoutName,
                 workoutType: .cardio,
                 xpEarned: estimatedXP,
-                steps: Int(steps),
                 durationMinutes: durationMinutes,
                 caloriesBurned: Int(calories)
             )

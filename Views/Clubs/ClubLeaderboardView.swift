@@ -12,70 +12,72 @@ struct ClubLeaderboardView: View {
     @State private var errorMessage = ""
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Header
-                VStack(spacing: PixelScale.px(2)) {
-                    PixelIconView(icon: .trophy, size: 48, color: Color(hex: "FFD700"))
-                    PixelText("WEEKLY LEADERBOARD", size: .large)
-                    PixelText(club.name.uppercased(), size: .small, color: PixelTheme.textSecondary)
-                }
-                .padding(PixelScale.px(4))
-
-                // Leaderboard
-                if isLoading {
-                    Spacer()
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: PixelTheme.text))
-                    PixelText("LOADING...", size: .small, color: PixelTheme.textSecondary)
-                    Spacer()
-                } else if entries.isEmpty {
-                    Spacer()
-                    VStack(spacing: PixelScale.px(2)) {
-                        PixelText("NO RANKINGS YET", size: .medium, color: PixelTheme.textSecondary)
-                        PixelText("COMPLETE WORKOUTS TO", size: .small, color: PixelTheme.textSecondary)
-                        PixelText("CLIMB THE RANKS!", size: .small, color: PixelTheme.textSecondary)
-                    }
-                    Spacer()
-                } else {
-                    ScrollView {
-                        VStack(spacing: PixelScale.px(1)) {
-                            // Top 3 podium
-                            if entries.count >= 3 {
-                                podiumView
-                            }
-
-                            // Full list
-                            ForEach(entries) { entry in
-                                PixelLeaderboardRow(entry: entry)
-                            }
-                        }
-                        .padding(.horizontal, PixelScale.px(4))
-                    }
-                }
-
-                // Week info
-                VStack(spacing: PixelScale.px(1)) {
-                    PixelText("RESETS EVERY MONDAY", size: .small, color: PixelTheme.textSecondary)
-                }
-                .padding(PixelScale.px(3))
-            }
-            .background(PixelTheme.background)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") {
-                        dismiss()
+        VStack(spacing: 0) {
+            // Header with back button
+            HStack {
+                Button(action: { dismiss() }) {
+                    HStack(spacing: PixelScale.px(1)) {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
                     }
                     .foregroundColor(PixelTheme.text)
                 }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: loadLeaderboard) {
-                        PixelIconView(icon: .bolt, size: 20, color: PixelTheme.text)
-                    }
+                Spacer()
+                Button(action: loadLeaderboard) {
+                    PixelIconView(icon: .bolt, size: 20, color: PixelTheme.text)
                 }
             }
+            .padding(.horizontal, PixelScale.px(4))
+            .padding(.top, PixelScale.px(2))
+
+            // Title Header
+            VStack(spacing: PixelScale.px(2)) {
+                PixelIconView(icon: .trophy, size: 48, color: Color(hex: "FFD700"))
+                PixelText("WEEKLY LEADERBOARD", size: .large)
+                PixelText(club.name.uppercased(), size: .small, color: PixelTheme.textSecondary)
+            }
+            .padding(PixelScale.px(4))
+
+            // Leaderboard
+            if isLoading {
+                Spacer()
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: PixelTheme.text))
+                PixelText("LOADING...", size: .small, color: PixelTheme.textSecondary)
+                Spacer()
+            } else if entries.isEmpty {
+                Spacer()
+                VStack(spacing: PixelScale.px(2)) {
+                    PixelText("NO RANKINGS YET", size: .medium, color: PixelTheme.textSecondary)
+                    PixelText("COMPLETE WORKOUTS TO", size: .small, color: PixelTheme.textSecondary)
+                    PixelText("CLIMB THE RANKS!", size: .small, color: PixelTheme.textSecondary)
+                }
+                Spacer()
+            } else {
+                ScrollView {
+                    VStack(spacing: PixelScale.px(1)) {
+                        // Top 3 podium
+                        if entries.count >= 3 {
+                            podiumView
+                        }
+
+                        // Full list
+                        ForEach(entries) { entry in
+                            PixelLeaderboardRow(entry: entry)
+                        }
+                    }
+                    .padding(.horizontal, PixelScale.px(4))
+                }
+            }
+
+            // Week info
+            VStack(spacing: PixelScale.px(1)) {
+                PixelText("RESETS EVERY MONDAY", size: .small, color: PixelTheme.textSecondary)
+            }
+            .padding(PixelScale.px(3))
         }
+        .background(PixelTheme.background)
+        .presentationBackground(PixelTheme.background)
         .alert("Error", isPresented: $showError) {
             Button("OK") { }
         } message: {

@@ -24,6 +24,15 @@ struct QuickWorkoutSheet: View {
         defaultTemplates.filter { $0.workoutType == .strength }
     }
 
+    // Strength templates grouped by muscle group
+    private var strengthByMuscleGroup: [(MuscleGroup, [WorkoutTemplate])] {
+        let grouped = Dictionary(grouping: strengthTemplates) { $0.muscleGroup ?? .fullBody }
+        return MuscleGroup.allCases.compactMap { group in
+            guard let templates = grouped[group], !templates.isEmpty else { return nil }
+            return (group, templates)
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Title bar
@@ -62,11 +71,11 @@ struct QuickWorkoutSheet: View {
                         }
                     }
 
-                    // Strength section
-                    if !strengthTemplates.isEmpty {
-                        PixelPanel(title: "STRENGTH") {
+                    // Strength sections grouped by muscle group
+                    ForEach(strengthByMuscleGroup, id: \.0) { group, templates in
+                        PixelPanel(title: group.displayName.uppercased()) {
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: PixelScale.px(2)) {
-                                ForEach(strengthTemplates) { template in
+                                ForEach(templates) { template in
                                     PixelWorkoutButton(template: template) {
                                         selectedTemplate = template
                                     }

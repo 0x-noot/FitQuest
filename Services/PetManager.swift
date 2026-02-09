@@ -11,8 +11,8 @@ struct PetManager {
     /// Workout happiness boost
     static let workoutHappinessBoost: Double = 15.0
 
-    /// Essence earning rate (1 essence per 10 XP)
-    static let essencePerXP: Int = 10
+    /// Essence earning rate (1 essence per 25 XP)
+    static let essencePerXP: Int = 25
 
     /// Recovery cost when pet runs away
     static let essenceRecoveryCost: Int = 150

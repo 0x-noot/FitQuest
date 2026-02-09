@@ -28,7 +28,7 @@ struct PixelCheckbox: View {
                 // Checkmark (when checked)
                 if isChecked {
                     PixelCheckmark()
-                        .stroke(PixelTheme.gbDarkest, lineWidth: PixelScale.px(1))
+                        .stroke(PixelTheme.text, lineWidth: PixelScale.px(1))
                         .frame(width: PixelScale.px(2.5), height: PixelScale.px(2.5))
                 }
             }

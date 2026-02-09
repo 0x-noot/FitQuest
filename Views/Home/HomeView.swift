@@ -34,6 +34,9 @@ struct HomeTab: View {
     // Motivational quote
     @State private var currentQuote: String = QuoteManager.randomQuote()
 
+    // Step counter
+    @StateObject private var healthKitManager = HealthKitManager.shared
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: PixelScale.px(3)) {
@@ -54,6 +57,18 @@ struct HomeTab: View {
                     xpProgressSection(pet: pet)
                         .padding(.horizontal, PixelScale.px(2))
                 }
+
+                // Step counter
+                PixelStepCounter(
+                    steps: healthKitManager.todaySteps,
+                    goal: HealthKitManager.dailyStepGoal,
+                    unclaimedXP: calculateUnclaimedStepXP(),
+                    isLoading: healthKitManager.isLoading,
+                    authStatus: healthKitManager.authorizationStatus,
+                    onClaim: { claimStepXP() },
+                    onRequestAuth: { requestHealthKitAccess() }
+                )
+                .padding(.horizontal, PixelScale.px(2))
 
                 // Action buttons row
                 actionButtonsRow
@@ -118,6 +133,16 @@ struct HomeTab: View {
             player.resetWeeklyWorkoutsIfNeeded()
             refreshDailyQuestsIfNeeded()
 
+            // Retry CloudKit sync if initial sync failed
+            if player.cloudKitRecordName == nil, let appleUserID = player.appleUserID {
+                Task {
+                    try? await CloudKitService.shared.createOrUpdateUserProfile(
+                        player: player,
+                        appleUserID: appleUserID
+                    )
+                }
+            }
+
             if let pet = player.pet {
                 PetManager.applyPassiveDecay(pet: pet)
                 PetManager.resetPlaySessionsIfNeeded(pet: pet)
@@ -135,6 +160,11 @@ struct HomeTab: View {
                 showGreetingDialogue(pet: pet)
                 startIdleDialogueTimer(pet: pet)
                 checkQuestProgress()
+            }
+
+            // Fetch steps from HealthKit (auto-detects prior authorization)
+            Task {
+                await healthKitManager.checkAndFetchSteps()
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -154,6 +184,13 @@ struct HomeTab: View {
 
                     try? modelContext.save()
                     showGreetingDialogue(pet: pet)
+                }
+
+                // Refresh steps when returning to foreground
+                if healthKitManager.authorizationStatus == .authorized {
+                    Task {
+                        await healthKitManager.fetchTodaySteps()
+                    }
                 }
             } else if newPhase == .inactive || newPhase == .background {
                 stopIdleDialogueTimer()
@@ -186,7 +223,7 @@ struct HomeTab: View {
 
                     // Play hint
                     if pet.canPlay && !pet.isAway {
-                        PixelLabel("TOUCH TO GIVE PETS! (\(pet.remainingPlaySessions) LEFT)")
+                        PixelLabel("TAP TO PLAY WITH YOUR PET!")
                     }
                 }
 
@@ -552,8 +589,101 @@ struct HomeTab: View {
 
         try? modelContext.save()
 
+        // Sync profile to CloudKit
+        if let appleUserID = player.appleUserID {
+            Task {
+                try? await CloudKitService.shared.createOrUpdateUserProfile(
+                    player: player,
+                    appleUserID: appleUserID
+                )
+            }
+        }
+
         // Post activity to clubs
         postClubActivity(workout: workout, didLevelUp: showPetLevelUp, didEvolve: showEvolution)
+
+        // Show interstitial ad every 2 workouts
+        if !showPetLevelUp && !showEvolution {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                print("[AdManager] Triggering interstitial check after workout")
+                AdManager.shared.onWorkoutCompleted()
+            }
+        } else {
+            AdManager.shared.incrementWorkoutCount()
+        }
+    }
+
+    // MARK: - Step Counter
+
+    private func calculateUnclaimedStepXP() -> Int {
+        let currentSteps = healthKitManager.todaySteps
+        let totalXPForAllSteps = HealthKitManager.calculateStepXP(steps: currentSteps)
+
+        let alreadyAwardedXP: Int
+        if let lastDate = player.lastStepXPAwardDate,
+           Calendar.current.isDateInToday(lastDate) {
+            alreadyAwardedXP = HealthKitManager.calculateStepXP(steps: player.lastStepXPAwardedSteps)
+        } else {
+            alreadyAwardedXP = 0
+        }
+
+        return max(0, totalXPForAllSteps - alreadyAwardedXP)
+    }
+
+    private func claimStepXP() {
+        guard let pet = player.pet else { return }
+
+        let previousLevel = pet.currentLevel
+        let previousStage = pet.evolutionStage
+
+        let xpAwarded = HealthKitManager.awardStepXP(
+            player: player,
+            pet: pet,
+            currentSteps: healthKitManager.todaySteps
+        )
+
+        guard xpAwarded > 0 else { return }
+
+        if pet.evolutionStage != previousStage {
+            evolutionStage = pet.evolutionStage
+            if player.soundEffectsEnabled {
+                SoundManager.shared.playLevelUp()
+            }
+            showEvolution = true
+        } else if pet.currentLevel > previousLevel {
+            petNewLevel = pet.currentLevel
+            if player.soundEffectsEnabled {
+                SoundManager.shared.playLevelUp()
+            }
+            showPetLevelUp = true
+        }
+
+        if player.soundEffectsEnabled {
+            SoundManager.shared.playXPGain()
+            SoundManager.shared.playSuccessHaptic()
+        }
+
+        try? modelContext.save()
+
+        // Sync profile to CloudKit
+        if let appleUserID = player.appleUserID {
+            Task {
+                try? await CloudKitService.shared.createOrUpdateUserProfile(
+                    player: player,
+                    appleUserID: appleUserID
+                )
+            }
+        }
+    }
+
+    private func requestHealthKitAccess() {
+        Task {
+            await healthKitManager.requestAuthorization()
+            if healthKitManager.authorizationStatus == .authorized {
+                await healthKitManager.fetchTodaySteps()
+                healthKitManager.startObservingSteps()
+            }
+        }
     }
 
     // MARK: - Club Activity Posting
