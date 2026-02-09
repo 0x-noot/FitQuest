@@ -185,15 +185,17 @@ struct AnimatedSpriteView: View {
     let pixelSize: CGFloat
     let isAnimating: Bool
     let palette: PixelTheme.PetPalette?
+    var currentYOffset: Binding<CGFloat>?
 
     @State private var frameIndex = 0
     @State private var timer: Timer?
 
-    init(animation: SpriteAnimation, pixelSize: CGFloat, isAnimating: Bool, palette: PixelTheme.PetPalette? = nil) {
+    init(animation: SpriteAnimation, pixelSize: CGFloat, isAnimating: Bool, palette: PixelTheme.PetPalette? = nil, currentYOffset: Binding<CGFloat>? = nil) {
         self.animation = animation
         self.pixelSize = pixelSize
         self.isAnimating = isAnimating
         self.palette = palette
+        self.currentYOffset = currentYOffset
     }
 
     var body: some View {
@@ -220,8 +222,11 @@ struct AnimatedSpriteView: View {
         guard isAnimating else { return }
         stopAnimation()
 
+        currentYOffset?.wrappedValue = animation.frames[0].yOffset * pixelSize
+
         timer = Timer.scheduledTimer(withTimeInterval: animation.frameDuration, repeats: true) { _ in
             frameIndex = (frameIndex + 1) % animation.frames.count
+            currentYOffset?.wrappedValue = animation.frames[frameIndex].yOffset * pixelSize
         }
     }
 
@@ -229,6 +234,7 @@ struct AnimatedSpriteView: View {
         timer?.invalidate()
         timer = nil
         frameIndex = 0
+        currentYOffset?.wrappedValue = 0
     }
 }
 

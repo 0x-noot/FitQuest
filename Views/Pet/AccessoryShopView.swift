@@ -185,9 +185,16 @@ struct AccessoryShopView: View {
                             .frame(width: PixelScale.px(20), height: PixelScale.px(20))
                             .pixelOutline()
 
-                        Image(systemName: accessory.iconName)
-                            .font(.system(size: 40))
-                            .foregroundColor(accessory.rarity.color)
+                        // Show pixel art sprite for hats, SF Symbol fallback for others
+                        if accessory.category == .hat,
+                           let hatSprite = HatSpriteLibrary.sprite(for: accessory.id),
+                           let hatPalette = HatSpriteLibrary.palette(for: accessory.id) {
+                            PixelSpriteView(sprite: hatSprite, pixelSize: 4, palette: hatPalette)
+                        } else {
+                            Image(systemName: accessory.iconName)
+                                .font(.system(size: 40))
+                                .foregroundColor(accessory.rarity.color)
+                        }
                     }
 
                     PixelText(accessory.name.uppercased(), size: .large)

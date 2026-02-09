@@ -10,6 +10,8 @@ struct PixelPetDisplay: View {
     let onTap: (() -> Void)?
 
     @State private var bounceOffset: CGFloat = 0
+    @State private var haloFloat: CGFloat = 0
+    @State private var animationYOffset: CGFloat = 0
 
     init(
         pet: Pet,
@@ -40,17 +42,53 @@ struct PixelPetDisplay: View {
         PixelTheme.PetPalette.palette(for: pet.species)
     }
 
+    // MARK: - Equipped Accessories
+
+    private var equippedHat: Accessory? { pet.equippedHat }
+    private var equippedBackground: Accessory? { pet.equippedBackground }
+    private var equippedEffect: Accessory? { pet.equippedEffect }
+
+    /// Aura colors — overridden by fire/thunder effects
+    private var outerAuraColors: [Color] {
+        if let effect = equippedEffect, !pet.isAway {
+            switch effect.id {
+            case "effect_fire":
+                return [Color.orange.opacity(0.5), Color.red.opacity(0.2), Color.clear]
+            case "effect_lightning":
+                return [Color(hex: "4488FF").opacity(0.5), Color.yellow.opacity(0.2), Color.clear]
+            default: break
+            }
+        }
+        return [petPalette.fill.opacity(0.5), petPalette.fill.opacity(0.2), Color.clear]
+    }
+
+    private var innerAuraColors: [Color] {
+        if let effect = equippedEffect, !pet.isAway {
+            switch effect.id {
+            case "effect_fire":
+                return [Color.orange.opacity(0.4), Color.red.opacity(0.15), Color.clear]
+            case "effect_lightning":
+                return [Color(hex: "4488FF").opacity(0.4), Color.yellow.opacity(0.15), Color.clear]
+            default: break
+            }
+        }
+        return [petPalette.highlight.opacity(0.4), petPalette.fill.opacity(0.15), Color.clear]
+    }
+
+    /// Habitat box dimensions
+    private var habitatWidth: CGFloat { 32 * pixelSize + PixelScale.px(4) }
+    private var habitatHeight: CGFloat { 32 * pixelSize + PixelScale.px(10) }
+
     var body: some View {
         VStack(spacing: PixelScale.px(2)) {
             // Pet sprite with animation
             ZStack {
-                // Glow aura effect (species-colored) - enhanced for visibility
+                // Glow aura effect — color overridden by equipped effects
                 if !pet.isAway {
-                    // Outer soft glow
                     Circle()
                         .fill(
                             RadialGradient(
-                                colors: [petPalette.fill.opacity(0.5), petPalette.fill.opacity(0.2), Color.clear],
+                                colors: outerAuraColors,
                                 center: .center,
                                 startRadius: 0,
                                 endRadius: 32 * pixelSize * 0.9
@@ -58,11 +96,10 @@ struct PixelPetDisplay: View {
                         )
                         .frame(width: 32 * pixelSize * 1.6, height: 32 * pixelSize * 1.6)
 
-                    // Inner bright glow for more pop
                     Circle()
                         .fill(
                             RadialGradient(
-                                colors: [petPalette.highlight.opacity(0.4), petPalette.fill.opacity(0.15), Color.clear],
+                                colors: innerAuraColors,
                                 center: .center,
                                 startRadius: 0,
                                 endRadius: 32 * pixelSize * 0.5
@@ -71,40 +108,66 @@ struct PixelPetDisplay: View {
                         .frame(width: 32 * pixelSize * 1.2, height: 32 * pixelSize * 1.2)
                 }
 
-                // Background panel - habitat box (taller for sky above pet)
+                // Background panel — habitat box with equipped background
                 ZStack(alignment: .bottom) {
-                    Rectangle()
-                        .fill(PixelTheme.cardBackground)
-                        .frame(
-                            width: 32 * pixelSize + PixelScale.px(4),
-                            height: 32 * pixelSize + PixelScale.px(10)
-                        )
-                        .pixelOutline()
-
-                    // Floor pattern - pixel dots for habitat ground
-                    HStack(spacing: PixelScale.px(2)) {
-                        ForEach(0..<5, id: \.self) { _ in
-                            Rectangle()
-                                .fill(PixelTheme.gbLight.opacity(0.3))
-                                .frame(width: PixelScale.px(1), height: PixelScale.px(1))
-                        }
+                    if let gradient = equippedBackground?.habitatGradient {
+                        Rectangle()
+                            .fill(gradient)
+                            .frame(width: habitatWidth, height: habitatHeight)
+                            .pixelOutline()
+                    } else {
+                        Rectangle()
+                            .fill(PixelTheme.cardBackground)
+                            .frame(width: habitatWidth, height: habitatHeight)
+                            .pixelOutline()
                     }
-                    .padding(.bottom, PixelScale.px(2))
+
+                    // Themed background decorations
+                    if let bg = equippedBackground {
+                        backgroundDecorations(for: bg)
+                            .frame(width: habitatWidth, height: habitatHeight)
+                            .clipped()
+                    } else {
+                        // Default floor pattern when no background equipped
+                        HStack(spacing: PixelScale.px(2)) {
+                            ForEach(0..<5, id: \.self) { _ in
+                                Rectangle()
+                                    .fill(PixelTheme.gbLight.opacity(0.3))
+                                    .frame(width: PixelScale.px(1), height: PixelScale.px(1))
+                            }
+                        }
+                        .padding(.bottom, PixelScale.px(2))
+                    }
                 }
 
-                // Animated sprite with species-specific colors (sits in bottom half)
+                // Animated sprite with species-specific colors
                 AnimatedSpriteView(
                     animation: animation,
                     pixelSize: pixelSize,
                     isAnimating: isAnimating && !pet.isAway,
-                    palette: petPalette
+                    palette: petPalette,
+                    currentYOffset: $animationYOffset
                 )
                 .opacity(pet.isAway ? 0.5 : 1.0)
                 .offset(y: PixelScale.px(3) + bounceOffset)
+
+                // Hat overlay
+                if let hat = equippedHat, !pet.isAway,
+                   let hatSprite = HatSpriteLibrary.sprite(for: hat.id),
+                   let hatPalette = HatSpriteLibrary.palette(for: hat.id) {
+                    PixelSpriteView(sprite: hatSprite, pixelSize: pixelSize, palette: hatPalette)
+                        .offset(y: HatSpriteLibrary.verticalOffset(for: hat.id) * pixelSize + PixelScale.px(3) + bounceOffset + animationYOffset + (hat.id == "hat_halo" ? haloFloat : 0))
+                }
+
+                // Effect particles — rendered on top of pet and hat
+                if let effect = equippedEffect, !pet.isAway {
+                    effectView(for: effect)
+                        .zIndex(1)
+                        .allowsHitTesting(false)
+                }
             }
             .contentShape(Rectangle())
             .onTapGesture {
-                // Bounce effect
                 withAnimation(.easeOut(duration: 0.1)) {
                     bounceOffset = -PixelScale.px(2)
                 }
@@ -115,11 +178,101 @@ struct PixelPetDisplay: View {
                 }
                 onTap?()
             }
+            .onAppear {
+                // Halo bob animation
+                if equippedHat?.id == "hat_halo" {
+                    withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                        haloFloat = -pixelSize
+                    }
+                }
+            }
 
             // Pet info bar
             if context == .home || context == .detail {
                 PixelPetInfoBar(pet: pet)
             }
+        }
+    }
+
+    // MARK: - Effect View Builder
+
+    @ViewBuilder
+    private func effectView(for effect: Accessory) -> some View {
+        let effectBounds = CGSize(width: habitatWidth, height: habitatHeight)
+
+        switch effect.id {
+        case "effect_hearts":
+            PixelParticleEffect(
+                icon: .heart,
+                color: Color(hex: "FFD6E8"),
+                particleCount: 10,
+                style: .floatUp,
+                bounds: effectBounds,
+                iconSize: 14
+            )
+        case "effect_stars":
+            PixelParticleEffect(
+                icon: .star,
+                color: Color(hex: "F0E6FF"),
+                particleCount: 10,
+                style: .twinkle,
+                bounds: effectBounds,
+                iconSize: 14
+            )
+        case "effect_fire":
+            PixelParticleEffect(
+                icon: .flame,
+                color: Color(hex: "FFE0B2"),
+                particleCount: 6,
+                style: .flank,
+                bounds: effectBounds,
+                iconSize: 14
+            )
+        case "effect_sparkle":
+            PixelParticleEffect(
+                icon: .sparkle,
+                color: Color(hex: "F0E6FF"),
+                particleCount: 10,
+                style: .floatUp,
+                bounds: effectBounds,
+                iconSize: 14
+            )
+        case "effect_lightning":
+            PixelParticleEffect(
+                icon: .bolt,
+                color: Color(hex: "FFFDE0"),
+                particleCount: 5,
+                style: .flash,
+                bounds: effectBounds,
+                iconSize: 14
+            )
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: - Background Decorations
+
+    @ViewBuilder
+    private func backgroundDecorations(for background: Accessory) -> some View {
+        let pw = PixelScale.px(1)
+        let size = CGSize(width: habitatWidth, height: habitatHeight)
+
+        switch background.id {
+        case "bg_gradient_blue":
+            OceanDecorationView(pixelWidth: pw, bounds: size)
+        case "bg_gradient_green":
+            ForestDecorationView(pixelWidth: pw, bounds: size)
+        case "bg_gradient_purple":
+            TwilightDecorationView(pixelWidth: pw, bounds: size)
+        case "bg_gradient_fire":
+            InfernoDecorationView(pixelWidth: pw, bounds: size)
+        case "bg_gradient_rainbow":
+            RainbowDecorationView(pixelWidth: pw, bounds: size)
+        case "bg_gradient_gold":
+            GoldenHourDecorationView(pixelWidth: pw, bounds: size)
+        default:
+            EmptyView()
         }
     }
 }

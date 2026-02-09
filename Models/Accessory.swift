@@ -135,4 +135,66 @@ extension Accessory {
             return nil
         }
     }
+
+    /// Darker, muted gradient for the rectangular habitat box in PixelPetDisplay
+    var habitatGradient: LinearGradient? {
+        guard category == .background else { return nil }
+
+        switch id {
+        case "bg_gradient_blue":
+            return LinearGradient(
+                colors: [Color(hex: "1A2A4A"), Color(hex: "2A4A5A")],
+                startPoint: .top, endPoint: .bottom
+            )
+        case "bg_gradient_green":
+            return LinearGradient(
+                colors: [Color(hex: "1A3A2A"), Color(hex: "2A4A2A")],
+                startPoint: .top, endPoint: .bottom
+            )
+        case "bg_gradient_purple":
+            return LinearGradient(
+                colors: [Color(hex: "1A1A3A"), Color(hex: "3A2A4A")],
+                startPoint: .top, endPoint: .bottom
+            )
+        case "bg_gradient_fire":
+            return LinearGradient(
+                colors: [Color(hex: "3A1A1A"), Color(hex: "4A2A1A")],
+                startPoint: .top, endPoint: .bottom
+            )
+        case "bg_gradient_rainbow":
+            return LinearGradient(
+                colors: [
+                    Color.red.opacity(0.15),
+                    Color.orange.opacity(0.15),
+                    Color.yellow.opacity(0.15),
+                    Color.green.opacity(0.15),
+                    Color.blue.opacity(0.15),
+                    Color.purple.opacity(0.15)
+                ],
+                startPoint: .top, endPoint: .bottom
+            )
+        case "bg_gradient_gold":
+            return LinearGradient(
+                colors: [Color(hex: "3A2A10"), Color(hex: "4A3A1A")],
+                startPoint: .top, endPoint: .bottom
+            )
+        default:
+            return nil
+        }
+    }
+
+    /// Themed floor dot color for the habitat box
+    var habitatFloorColor: Color? {
+        guard category == .background else { return nil }
+
+        switch id {
+        case "bg_gradient_blue": return Color.cyan.opacity(0.4)
+        case "bg_gradient_green": return Color.green.opacity(0.4)
+        case "bg_gradient_purple": return Color.purple.opacity(0.4)
+        case "bg_gradient_fire": return Color.orange.opacity(0.4)
+        case "bg_gradient_rainbow": return PixelTheme.gbLight.opacity(0.3)
+        case "bg_gradient_gold": return Color(hex: "FFD700").opacity(0.4)
+        default: return nil
+        }
+    }
 }
