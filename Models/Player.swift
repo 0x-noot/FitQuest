@@ -50,6 +50,11 @@ final class Player {
     // Accessory system
     var unlockedAccessoriesRaw: String = ""  // Comma-separated accessory IDs
 
+    // Workout plan
+    var planRegenerationCount: Int = 0
+    var completedPlanDaysRaw: String = ""
+    var lastPlanResetDate: Date?
+
     // Step tracking (HealthKit)
     var lastStepXPAwardDate: Date?
     var lastStepXPAwardedSteps: Int = 0
@@ -204,6 +209,11 @@ final class Player {
         // Daily quests defaults
         self.lastQuestRefresh = nil
 
+        // Workout plan defaults
+        self.planRegenerationCount = 0
+        self.completedPlanDaysRaw = ""
+        self.lastPlanResetDate = nil
+
         // Accessory system defaults
         self.unlockedAccessoriesRaw = ""
 
@@ -348,5 +358,44 @@ final class Player {
     /// Get total XP earned today (pet's XP from today's workouts)
     var todaysXP: Int {
         todaysWorkouts.reduce(0) { $0 + $1.xpEarned }
+    }
+
+    // MARK: - Workout Plan Tracking
+
+    var completedPlanDays: Set<String> {
+        get {
+            guard !completedPlanDaysRaw.isEmpty else { return [] }
+            return Set(completedPlanDaysRaw.split(separator: ",").map { String($0) })
+        }
+        set {
+            completedPlanDaysRaw = newValue.sorted().joined(separator: ",")
+        }
+    }
+
+    func markPlanDayCompleted(_ dayLabel: String) {
+        resetPlanIfNewWeek()
+        var days = completedPlanDays
+        days.insert(dayLabel)
+        completedPlanDays = days
+    }
+
+    func isPlanDayCompleted(_ dayLabel: String) -> Bool {
+        resetPlanIfNewWeek()
+        return completedPlanDays.contains(dayLabel)
+    }
+
+    func resetPlanIfNewWeek() {
+        let calendar = Calendar.current
+        let currentWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) ?? Date()
+
+        if let lastReset = lastPlanResetDate {
+            let lastResetWeekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: lastReset)) ?? Date()
+            if currentWeekStart > lastResetWeekStart {
+                completedPlanDaysRaw = ""
+                lastPlanResetDate = Date()
+            }
+        } else {
+            lastPlanResetDate = Date()
+        }
     }
 }

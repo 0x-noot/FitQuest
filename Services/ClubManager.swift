@@ -23,10 +23,12 @@ struct ClubManager {
     }
 
     static func canCreateClub(currentClubCount: Int) -> Bool {
+        guard SubscriptionManager.shared.isPremium else { return false }
         return currentClubCount < maxClubsPerUser
     }
 
     static func canJoinClub(currentClubCount: Int) -> Bool {
+        guard SubscriptionManager.shared.isPremium else { return false }
         return currentClubCount < maxClubsPerUser
     }
 

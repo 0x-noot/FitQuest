@@ -60,7 +60,7 @@ struct DatabaseErrorView: View {
                 PixelText("TRY THESE STEPS:", size: .small, color: PixelTheme.textSecondary)
                 PixelText("1. CLOSE THE APP", size: .small, color: PixelTheme.textSecondary)
                 PixelText("2. RESTART YOUR DEVICE", size: .small, color: PixelTheme.textSecondary)
-                PixelText("3. REOPEN FITQUEST", size: .small, color: PixelTheme.textSecondary)
+                PixelText("3. REOPEN FITOGATCHI", size: .small, color: PixelTheme.textSecondary)
             }
             .padding(PixelScale.px(3))
             .background(PixelTheme.cardBackground)
@@ -81,6 +81,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
         // Initialize Google Mobile Ads SDK
         GADMobileAds.sharedInstance().start(completionHandler: nil)
+
+        // Initialize subscription manager (starts transaction listener)
+        _ = SubscriptionManager.shared
 
         return true
     }

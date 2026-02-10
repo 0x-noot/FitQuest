@@ -13,6 +13,8 @@ struct ProfileTab: View {
     @State private var showSignOutConfirm = false
 
     @StateObject private var authManager = AuthManager.shared
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @State private var showPaywall = false
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -36,6 +38,10 @@ struct ProfileTab: View {
             statsSection
                 .padding(.horizontal, PixelScale.px(2))
 
+            // Subscription section
+            subscriptionSection
+                .padding(.horizontal, PixelScale.px(2))
+
             // Account section
             accountSection
                 .padding(.horizontal, PixelScale.px(2))
@@ -47,6 +53,51 @@ struct ProfileTab: View {
             Spacer()
         }
         .background(PixelTheme.background)
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+        }
+    }
+
+    // MARK: - Subscription Section
+
+    private var subscriptionSection: some View {
+        PixelPanel(title: "SUBSCRIPTION") {
+            if subscriptionManager.isPremium {
+                VStack(spacing: PixelScale.px(1)) {
+                    HStack(spacing: PixelScale.px(2)) {
+                        PixelIconView(icon: .star, size: 12, color: PixelTheme.gbLightest)
+                        PixelText("PREMIUM ACTIVE", size: .small, color: PixelTheme.gbLightest)
+                        Spacer()
+                        PremiumBadge()
+                    }
+
+                    Button {
+                        if let url = URL(string: "https://apps.apple.com/account/subscriptions") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            PixelText("MANAGE SUBSCRIPTION", size: .small, color: PixelTheme.textSecondary)
+                            Spacer()
+                            PixelIconView(icon: .arrow, size: 10, color: PixelTheme.textSecondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            } else {
+                VStack(spacing: PixelScale.px(2)) {
+                    HStack(spacing: PixelScale.px(2)) {
+                        PixelIconView(icon: .star, size: 12, color: PixelTheme.textSecondary)
+                        PixelText("FREE PLAN", size: .small, color: PixelTheme.textSecondary)
+                        Spacer()
+                    }
+
+                    PixelButton("UPGRADE TO PREMIUM", icon: .star, style: .primary) {
+                        showPaywall = true
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Pet Section

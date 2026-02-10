@@ -50,4 +50,18 @@ enum FocusArea: String, Codable, CaseIterable, Identifiable {
         case .fullBody: return "All major muscle groups"
         }
     }
+
+    /// Maps FocusArea to the corresponding MuscleGroup(s) used by WorkoutTemplates
+    var muscleGroups: [MuscleGroup] {
+        switch self {
+        case .chest: return [.chest]
+        case .back: return [.back]
+        case .shoulders: return [.shoulders]
+        case .arms: return [.biceps, .triceps]
+        case .core: return [.core]
+        case .legs: return [.legs]
+        case .glutes: return [.legs]
+        case .fullBody: return MuscleGroup.allCases
+        }
+    }
 }

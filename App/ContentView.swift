@@ -7,6 +7,7 @@ struct ContentView: View {
     @Query private var players: [Player]
     @State private var isInitialized = false
     @State private var selectedTab: PixelTab = .home
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
 
     private var player: Player? {
         players.first
@@ -36,14 +37,16 @@ struct ContentView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                        // Banner ad
-                        GeometryReader { geometry in
-                            BannerAdView(
-                                adUnitID: AdManager.bannerAdUnitID,
-                                width: geometry.size.width
-                            )
+                        // Banner ad (hidden for premium users)
+                        if !subscriptionManager.isPremium {
+                            GeometryReader { geometry in
+                                BannerAdView(
+                                    adUnitID: AdManager.bannerAdUnitID,
+                                    width: geometry.size.width
+                                )
+                            }
+                            .frame(height: 50)
                         }
-                        .frame(height: 50)
 
                         // Custom pixel tab bar
                         PixelTabBar(selectedTab: $selectedTab)

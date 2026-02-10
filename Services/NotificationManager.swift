@@ -11,16 +11,16 @@ class NotificationManager: NSObject, ObservableObject {
     private let notificationCenter = UNUserNotificationCenter.current()
 
     // Guilt-based notification identifiers (Duolingo-style)
-    private let morningGuiltIdentifier = "fitquest.guilt.morning"      // 9 AM
-    private let afternoonGuiltIdentifier = "fitquest.guilt.afternoon"  // 3 PM
+    private let morningGuiltIdentifier = "fitogatchi.guilt.morning"      // 9 AM
+    private let afternoonGuiltIdentifier = "fitogatchi.guilt.afternoon"  // 3 PM
 
     // Legacy identifier for backward compatibility
-    private let workoutReminderIdentifier = "fitquest.workout.reminder"
+    private let workoutReminderIdentifier = "fitogatchi.workout.reminder"
 
     // Pet notification identifiers
-    private let petHungryIdentifier = "fitquest.pet.hungry"
-    private let petSadIdentifier = "fitquest.pet.sad"
-    private let petLeavingIdentifier = "fitquest.pet.leaving"
+    private let petHungryIdentifier = "fitogatchi.pet.hungry"
+    private let petSadIdentifier = "fitogatchi.pet.sad"
+    private let petLeavingIdentifier = "fitogatchi.pet.leaving"
 
     override init() {
         super.init()

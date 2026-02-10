@@ -167,7 +167,12 @@ struct PetManager {
 
     /// Calculate essence earned from workout XP
     static func essenceEarnedForWorkout(xp: Int) -> Int {
-        xp / essencePerXP
+        let baseEssence = xp / essencePerXP
+        if SubscriptionManager.shared.isPremium {
+            return baseEssence
+        } else {
+            return max(baseEssence / 2, 1)
+        }
     }
 
     /// Get happiness XP multiplier (1.10 if >= 90%, else 1.0)

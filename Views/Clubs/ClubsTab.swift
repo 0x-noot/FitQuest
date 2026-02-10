@@ -12,6 +12,8 @@ struct ClubsTab: View {
     @State private var isLoading = false
     @State private var showError = false
     @State private var errorMessage = ""
+    @State private var showPaywall = false
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,7 +26,9 @@ struct ClubsTab: View {
             .padding(.top, PixelScale.px(2))
             .padding(.bottom, PixelScale.px(3))
 
-            if (player.clubs ?? []).isEmpty {
+            if !subscriptionManager.isPremium {
+                premiumLockedState
+            } else if (player.clubs ?? []).isEmpty {
                 emptyState
             } else {
                 clubsList
@@ -32,8 +36,10 @@ struct ClubsTab: View {
 
             Spacer()
 
-            // Action buttons
-            actionButtons
+            // Action buttons (premium only)
+            if subscriptionManager.isPremium {
+                actionButtons
+            }
         }
         .background(PixelTheme.background)
         .sheet(isPresented: $showCreateClub) {
@@ -56,9 +62,36 @@ struct ClubsTab: View {
         } message: {
             Text(errorMessage)
         }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView(highlightedFeature: .clubs)
+        }
         .onAppear {
             refreshClubs()
         }
+    }
+
+    // MARK: - Premium Locked State
+
+    private var premiumLockedState: some View {
+        VStack(spacing: PixelScale.px(4)) {
+            Spacer()
+
+            PixelIconView(icon: .group, size: 64, color: PixelTheme.textSecondary)
+
+            VStack(spacing: PixelScale.px(2)) {
+                PremiumBadge()
+                PixelText("CLUBS ARE PREMIUM", size: .large)
+                PixelText("UPGRADE TO CREATE AND", size: .small, color: PixelTheme.textSecondary)
+                PixelText("JOIN FITNESS CLUBS!", size: .small, color: PixelTheme.textSecondary)
+            }
+
+            PixelButton("UPGRADE", icon: .star, style: .primary) {
+                showPaywall = true
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Empty State

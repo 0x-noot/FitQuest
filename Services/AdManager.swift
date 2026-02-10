@@ -30,6 +30,7 @@ class AdManager: NSObject, GADFullScreenContentDelegate {
     // MARK: - Interstitial Loading
 
     func preloadInterstitial() {
+        guard !SubscriptionManager.shared.isPremium else { return }
         guard !isLoadingInterstitial else { return }
         isLoadingInterstitial = true
 
@@ -64,6 +65,7 @@ class AdManager: NSObject, GADFullScreenContentDelegate {
     // MARK: - Workout Completed Hook
 
     func onWorkoutCompleted() {
+        guard !SubscriptionManager.shared.isPremium else { return }
         workoutsSinceLastAd += 1
         print("[AdManager] Workout count: \(workoutsSinceLastAd)/\(Self.workoutsPerInterstitial)")
 
