@@ -3,6 +3,7 @@ import SwiftData
 import UserNotifications
 import UIKit
 import GoogleMobileAds
+import AppTrackingTransparency
 
 @main
 struct FitogatchiApp: App {
@@ -72,6 +73,8 @@ struct DatabaseErrorView: View {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+    private var hasRequestedATT = false
+
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -79,12 +82,21 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Set up notification delegate
         UNUserNotificationCenter.current().delegate = NotificationManager.shared
 
-        // Initialize Google Mobile Ads SDK
-        GADMobileAds.sharedInstance().start(completionHandler: nil)
-
         // Initialize subscription manager (starts transaction listener)
         _ = SubscriptionManager.shared
 
         return true
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        guard !hasRequestedATT else { return }
+        hasRequestedATT = true
+
+        // Request ATT authorization before initializing ads SDK
+        ATTrackingManager.requestTrackingAuthorization { _ in
+            DispatchQueue.main.async {
+                GADMobileAds.sharedInstance().start(completionHandler: nil)
+            }
+        }
     }
 }

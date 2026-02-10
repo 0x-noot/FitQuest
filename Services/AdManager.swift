@@ -1,6 +1,12 @@
 import GoogleMobileAds
 import SwiftUI
 
+private func debugLog(_ message: String) {
+    #if DEBUG
+    print(message)
+    #endif
+}
+
 class AdManager: NSObject, GADFullScreenContentDelegate {
     static let shared = AdManager()
 
@@ -34,23 +40,23 @@ class AdManager: NSObject, GADFullScreenContentDelegate {
         guard !isLoadingInterstitial else { return }
         isLoadingInterstitial = true
 
-        print("[AdManager] Loading interstitial ad...")
+        debugLog("[AdManager] Loading interstitial ad...")
         GADInterstitialAd.load(
             withAdUnitID: interstitialAdUnitID,
             request: GADRequest()
         ) { [weak self] ad, error in
             self?.isLoadingInterstitial = false
             if let error = error {
-                print("[AdManager] Failed to load interstitial: \(error.localizedDescription)")
+                debugLog("[AdManager] Failed to load interstitial: \(error.localizedDescription)")
                 if let retryCount = self?.interstitialRetryCount, retryCount < Self.maxRetries {
                     self?.interstitialRetryCount = retryCount + 1
                     let delay = pow(2.0, Double(retryCount + 1))
-                    print("[AdManager] Retrying interstitial load in \(delay)s (attempt \(retryCount + 1)/\(Self.maxRetries))")
+                    debugLog("[AdManager] Retrying interstitial load in \(delay)s (attempt \(retryCount + 1)/\(Self.maxRetries))")
                     DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                         self?.preloadInterstitial()
                     }
                 } else {
-                    print("[AdManager] Max retries reached, will try again on next workout")
+                    debugLog("[AdManager] Max retries reached, will try again on next workout")
                     self?.interstitialRetryCount = 0
                 }
                 return
@@ -58,7 +64,7 @@ class AdManager: NSObject, GADFullScreenContentDelegate {
             self?.interstitialAd = ad
             ad?.fullScreenContentDelegate = self
             self?.interstitialRetryCount = 0
-            print("[AdManager] Interstitial ad loaded successfully")
+            debugLog("[AdManager] Interstitial ad loaded successfully")
         }
     }
 
@@ -67,7 +73,7 @@ class AdManager: NSObject, GADFullScreenContentDelegate {
     func onWorkoutCompleted() {
         guard !SubscriptionManager.shared.isPremium else { return }
         workoutsSinceLastAd += 1
-        print("[AdManager] Workout count: \(workoutsSinceLastAd)/\(Self.workoutsPerInterstitial)")
+        debugLog("[AdManager] Workout count: \(workoutsSinceLastAd)/\(Self.workoutsPerInterstitial)")
 
         if workoutsSinceLastAd >= Self.workoutsPerInterstitial {
             showInterstitial()
@@ -76,24 +82,24 @@ class AdManager: NSObject, GADFullScreenContentDelegate {
 
     func incrementWorkoutCount() {
         workoutsSinceLastAd += 1
-        print("[AdManager] Workout count (deferred): \(workoutsSinceLastAd)/\(Self.workoutsPerInterstitial)")
+        debugLog("[AdManager] Workout count (deferred): \(workoutsSinceLastAd)/\(Self.workoutsPerInterstitial)")
     }
 
     // MARK: - Interstitial Presentation
 
     private func showInterstitial() {
         guard let ad = interstitialAd else {
-            print("[AdManager] Interstitial not ready, preloading for next time")
+            debugLog("[AdManager] Interstitial not ready, preloading for next time")
             preloadInterstitial()
             return
         }
 
         guard let rootViewController = Self.topViewController() else {
-            print("[AdManager] Could not find root view controller — scenes: \(UIApplication.shared.connectedScenes.count), keyWindow: \(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.windows.first(where: { $0.isKeyWindow }) != nil)")
+            debugLog("[AdManager] Could not find root view controller — scenes: \(UIApplication.shared.connectedScenes.count), keyWindow: \(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.windows.first(where: { $0.isKeyWindow }) != nil)")
             return
         }
 
-        print("[AdManager] Presenting interstitial ad from \(type(of: rootViewController))")
+        debugLog("[AdManager] Presenting interstitial ad from \(type(of: rootViewController))")
         ad.present(fromRootViewController: rootViewController)
 
         workoutsSinceLastAd = 0
@@ -104,21 +110,21 @@ class AdManager: NSObject, GADFullScreenContentDelegate {
     // MARK: - GADFullScreenContentDelegate
 
     func adDidRecordImpression(_ ad: GADFullScreenPresentingAd) {
-        print("[AdManager] Interstitial recorded impression")
+        debugLog("[AdManager] Interstitial recorded impression")
     }
 
     func ad(_ ad: GADFullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
-        print("[AdManager] Interstitial failed to present: \(error.localizedDescription)")
+        debugLog("[AdManager] Interstitial failed to present: \(error.localizedDescription)")
         interstitialAd = nil
         preloadInterstitial()
     }
 
     func adWillDismissFullScreenContent(_ ad: GADFullScreenPresentingAd) {
-        print("[AdManager] Interstitial will dismiss")
+        debugLog("[AdManager] Interstitial will dismiss")
     }
 
     func adDidDismissFullScreenContent(_ ad: GADFullScreenPresentingAd) {
-        print("[AdManager] Interstitial dismissed, preloading next")
+        debugLog("[AdManager] Interstitial dismissed, preloading next")
         interstitialAd = nil
         preloadInterstitial()
     }

@@ -1,6 +1,12 @@
 import SwiftUI
 import GoogleMobileAds
 
+private func debugLog(_ message: String) {
+    #if DEBUG
+    print(message)
+    #endif
+}
+
 struct BannerAdView: UIViewRepresentable {
     let adUnitID: String
     let width: CGFloat
@@ -28,19 +34,19 @@ struct BannerAdView: UIViewRepresentable {
 
     class Coordinator: NSObject, GADBannerViewDelegate {
         func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
-            print("[BannerAd] Loaded successfully for unit: \(bannerView.adUnitID ?? "nil")")
+            debugLog("[BannerAd] Loaded successfully for unit: \(bannerView.adUnitID ?? "nil")")
         }
 
         func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
-            print("[BannerAd] Failed to load: \(error.localizedDescription)")
+            debugLog("[BannerAd] Failed to load: \(error.localizedDescription)")
         }
 
         func bannerViewDidRecordImpression(_ bannerView: GADBannerView) {
-            print("[BannerAd] Recorded impression")
+            debugLog("[BannerAd] Recorded impression")
         }
 
         func bannerViewDidRecordClick(_ bannerView: GADBannerView) {
-            print("[BannerAd] Recorded click")
+            debugLog("[BannerAd] Recorded click")
         }
     }
 }
